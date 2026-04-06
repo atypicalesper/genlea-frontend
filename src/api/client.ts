@@ -27,7 +27,11 @@ export async function apiFetch<T>(
       const text = await res.text().catch(() => res.statusText);
       throw new ApiError(res.status, `API ${res.status}: ${text.slice(0, 200)}`);
     }
-    return res.json() as Promise<T>;
+    try {
+      return await res.json() as T;
+    } catch {
+      throw new ApiError(200, 'Server returned non-JSON response');
+    }
   } finally {
     clearTimeout(tid);
   }

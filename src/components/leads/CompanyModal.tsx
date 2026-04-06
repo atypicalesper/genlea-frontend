@@ -1,19 +1,10 @@
 import { useEffect, useState } from 'react';
 import { fetchCompany, postReEnrich, postReScore } from '../../api/endpoints';
-import type { CompanyDetail, ContactRole } from '../../types';
+import type { CompanyDetail } from '../../types';
 import Badge from '../ui/Badge';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
-
-const ROLE_ORDER: Partial<Record<ContactRole, number>> = {
-  'CEO': 0, 'Founder': 1, 'Co-Founder': 2, 'CTO': 3,
-  'VP of Engineering': 4, 'VP Engineering': 4, 'VP of Product': 5, 'VP of Technology': 5,
-  'Head of Engineering': 6, 'Director of Engineering': 7, 'Engineering Manager': 8,
-  'CPO': 9, 'COO': 10, 'CFO': 11,
-  'Head of People': 12, 'Head of HR': 13, 'VP of HR': 13,
-  'HR': 14, 'Recruiter': 15, 'Head of Talent': 16, 'Talent Acquisition': 17,
-};
 
 interface CompanyModalProps {
   companyId: string | null;
@@ -54,9 +45,7 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
   };
 
   const c = detail?.company;
-  const sortedContacts = [...(detail?.contacts ?? [])].sort(
-    (a, b) => (ROLE_ORDER[a.role] ?? 50) - (ROLE_ORDER[b.role] ?? 50)
-  );
+  const sortedContacts = detail?.contacts ?? [];
 
   return (
     <div

@@ -169,11 +169,14 @@ export interface LogStats {
 
 export interface Settings {
   originRatioThreshold: number;
-  minNameSample: number;
-  hotVerifiedThreshold: number;
-  hotThreshold: number;
-  warmThreshold: number;
-  concurrency: { discovery: number; enrichment: number; scoring: number };
+  originRatioMinSample: number;
+  leadScoreHotVerifiedThreshold: number;
+  leadScoreHotThreshold: number;
+  leadScoreWarmThreshold: number;
+  leadScoreColdThreshold: number;
+  workerConcurrencyDiscovery: number;
+  workerConcurrencyEnrichment: number;
+  workerConcurrencyScoring: number;
 }
 
 export interface CompanyDetail {

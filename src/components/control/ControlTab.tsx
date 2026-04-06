@@ -33,7 +33,7 @@ function ManualScrapeForm({ onScrape }: { onScrape: (src: string, kw: string, li
             {SOURCES.map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <div className="flex flex-col gap-0.5 flex-1 min-w-[160px]">
+        <div className="flex flex-col gap-0.5 flex-1 min-w-40">
           <label className="text-[10px] text-gray-400 uppercase tracking-wide">Keywords</label>
           <input
             type="text"
@@ -68,9 +68,6 @@ function SettingsPanel({
   const update = <K extends keyof Settings>(key: K, val: Settings[K]) =>
     setLocal(s => ({ ...s, [key]: val }));
 
-  const updateConcurrency = (queue: keyof Settings['concurrency'], val: number) =>
-    setLocal(s => ({ ...s, concurrency: { ...s.concurrency, [queue]: val } }));
-
   const handleSave = async () => {
     setSaving(true);
     try { await onSave(local); }
@@ -95,45 +92,63 @@ function SettingsPanel({
         />
         <SliderField
           label="Min Name Sample"
-          value={local.minNameSample}
+          value={local.originRatioMinSample}
           min={5} max={100} step={5}
           display={v => String(v)}
-          onChange={v => update('minNameSample', v)}
+          onChange={v => update('originRatioMinSample', v)}
         />
         <SliderField
           label="Hot Verified Threshold"
-          value={local.hotVerifiedThreshold}
+          value={local.leadScoreHotVerifiedThreshold}
           min={50} max={100} step={5}
           display={v => String(v)}
-          onChange={v => update('hotVerifiedThreshold', v)}
+          onChange={v => update('leadScoreHotVerifiedThreshold', v)}
         />
         <SliderField
           label="Hot Threshold"
-          value={local.hotThreshold}
+          value={local.leadScoreHotThreshold}
           min={40} max={90} step={5}
           display={v => String(v)}
-          onChange={v => update('hotThreshold', v)}
+          onChange={v => update('leadScoreHotThreshold', v)}
         />
         <SliderField
           label="Warm Threshold"
-          value={local.warmThreshold}
+          value={local.leadScoreWarmThreshold}
           min={20} max={70} step={5}
           display={v => String(v)}
-          onChange={v => update('warmThreshold', v)}
+          onChange={v => update('leadScoreWarmThreshold', v)}
+        />
+        <SliderField
+          label="Cold Threshold"
+          value={local.leadScoreColdThreshold}
+          min={5} max={40} step={5}
+          display={v => String(v)}
+          onChange={v => update('leadScoreColdThreshold', v)}
         />
         <div className="col-span-2">
           <div className="text-gray-400 uppercase tracking-wide text-[10px] mb-2">Worker Concurrency</div>
           <div className="grid grid-cols-3 gap-2">
-            {(['discovery','enrichment','scoring'] as const).map(q => (
-              <SliderField
-                key={q}
-                label={q}
-                value={local.concurrency[q]}
-                min={1} max={10} step={1}
-                display={v => String(v)}
-                onChange={v => updateConcurrency(q, v)}
-              />
-            ))}
+            <SliderField
+              label="Discovery"
+              value={local.workerConcurrencyDiscovery}
+              min={1} max={20} step={1}
+              display={v => String(v)}
+              onChange={v => update('workerConcurrencyDiscovery', v)}
+            />
+            <SliderField
+              label="Enrichment"
+              value={local.workerConcurrencyEnrichment}
+              min={1} max={20} step={1}
+              display={v => String(v)}
+              onChange={v => update('workerConcurrencyEnrichment', v)}
+            />
+            <SliderField
+              label="Scoring"
+              value={local.workerConcurrencyScoring}
+              min={1} max={30} step={1}
+              display={v => String(v)}
+              onChange={v => update('workerConcurrencyScoring', v)}
+            />
           </div>
         </div>
       </div>
