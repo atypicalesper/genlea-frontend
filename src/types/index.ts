@@ -170,6 +170,8 @@ export interface LogStats {
 export interface Settings {
   originRatioThreshold: number;
   originRatioMinSample: number;
+  targetTechTags: string[];
+  highValueIndustries: string[];
   leadScoreHotVerifiedThreshold: number;
   leadScoreHotThreshold: number;
   leadScoreWarmThreshold: number;

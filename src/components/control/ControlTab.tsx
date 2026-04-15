@@ -63,6 +63,8 @@ function SettingsPanel({
   settings, onSave,
 }: { settings: Settings; onSave: (patch: Partial<Settings>) => Promise<void> }) {
   const [local, setLocal] = useState<Settings>(settings);
+  const [techTagsText, setTechTagsText] = useState((settings.targetTechTags ?? []).join(', '));
+  const [industriesText, setIndustriesText] = useState((settings.highValueIndustries ?? []).join(', '));
   const [saving, setSaving] = useState(false);
 
   const update = <K extends keyof Settings>(key: K, val: Settings[K]) =>
@@ -70,28 +72,36 @@ function SettingsPanel({
 
   const handleSave = async () => {
     setSaving(true);
-    try { await onSave(local); }
-    finally { setSaving(false); }
+    try {
+      const targetTechTags = techTagsText.split(',').map(t => t.trim()).filter(Boolean);
+      const highValueIndustries = industriesText.split(',').map(t => t.trim()).filter(Boolean);
+      await onSave({ ...local, targetTechTags, highValueIndustries });
+    } finally { setSaving(false); }
   };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pipeline Parameters</h3>
         <Button variant="primary" onClick={handleSave} disabled={saving} className="text-xs">
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </div>
+      <p className="text-[10px] text-gray-400 mb-4">
+        Controls how companies are qualified — changes take effect on the next enrichment/scoring run.
+      </p>
       <div className="grid grid-cols-2 gap-4 text-xs">
         <SliderField
           label="Origin Ratio Threshold"
+          description="Minimum fraction of engineers that must appear to be of Indian origin. Lower = wider net; higher = stronger signal. Contributes up to 30/100 pts."
           value={local.originRatioThreshold}
-          min={0.4} max={0.95} step={0.05}
+          min={0.05} max={0.95} step={0.05}
           display={v => `${Math.round(v * 100)}%`}
           onChange={v => update('originRatioThreshold', v)}
         />
         <SliderField
           label="Min Name Sample"
+          description="How many developer names must be collected before the origin ratio is trusted. Below this count the ratio defaults to a neutral 10/30 instead of 0."
           value={local.originRatioMinSample}
           min={5} max={100} step={5}
           display={v => String(v)}
@@ -99,6 +109,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Hot Verified Threshold"
+          description="Score at or above this = Hot Verified (top-priority leads with confirmed contacts and strong signal)."
           value={local.leadScoreHotVerifiedThreshold}
           min={50} max={100} step={5}
           display={v => String(v)}
@@ -106,6 +117,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Hot Threshold"
+          description="Score at or above this (but below Hot Verified) = Hot. Most criteria met but may lack a verified email or have a small name sample."
           value={local.leadScoreHotThreshold}
           min={40} max={90} step={5}
           display={v => String(v)}
@@ -113,6 +125,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Warm Threshold"
+          description="Score at or above this (but below Hot) = Warm. Shows some signal — good for follow-up after the Hot pool is worked."
           value={local.leadScoreWarmThreshold}
           min={20} max={70} step={5}
           display={v => String(v)}
@@ -120,16 +133,40 @@ function SettingsPanel({
         />
         <SliderField
           label="Cold Threshold"
+          description="Score at or above this (but below Warm) = Cold. Below this threshold companies are disqualified automatically."
           value={local.leadScoreColdThreshold}
           min={5} max={40} step={5}
           display={v => String(v)}
           onChange={v => update('leadScoreColdThreshold', v)}
         />
-        <div className="col-span-2">
-          <div className="text-gray-400 uppercase tracking-wide text-[10px] mb-2">Worker Concurrency</div>
+
+        {/* Tag editors — full width */}
+        <div className="col-span-2 border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
+          <TagField
+            label="Target Tech Stack Tags"
+            description="Comma-separated tags that score positively (up to 20 pts). ai, ml, generative-ai score 5 pts each; all others 3 pts each."
+            value={techTagsText}
+            onChange={setTechTagsText}
+            placeholder="nodejs, typescript, python, react, ai, ml"
+          />
+          <TagField
+            label="High-Value Industries"
+            description="Comma-separated industry keywords (substring match). Companies matching any get +3 pts in Company Fit. Companies with no industry data get the bonus automatically (failsafe)."
+            value={industriesText}
+            onChange={setIndustriesText}
+            placeholder="ai, saas, fintech, healthtech, edtech"
+          />
+        </div>
+
+        <div className="col-span-2 border-t border-gray-100 pt-4">
+          <div className="text-gray-400 uppercase tracking-wide text-[10px] mb-2">
+            Worker Concurrency
+            <span className="normal-case ml-1 font-normal">— max parallel jobs per queue</span>
+          </div>
           <div className="grid grid-cols-3 gap-2">
             <SliderField
               label="Discovery"
+              description="Concurrent discovery jobs pulling from scrapers."
               value={local.workerConcurrencyDiscovery}
               min={1} max={20} step={1}
               display={v => String(v)}
@@ -137,6 +174,7 @@ function SettingsPanel({
             />
             <SliderField
               label="Enrichment"
+              description="Concurrent enrichment jobs (GitHub, Clearbit, Hunter, etc.)."
               value={local.workerConcurrencyEnrichment}
               min={1} max={20} step={1}
               display={v => String(v)}
@@ -144,6 +182,7 @@ function SettingsPanel({
             />
             <SliderField
               label="Scoring"
+              description="Concurrent scoring jobs — these are CPU-light so can run high."
               value={local.workerConcurrencyScoring}
               min={1} max={30} step={1}
               display={v => String(v)}
@@ -157,21 +196,40 @@ function SettingsPanel({
 }
 
 interface SliderFieldProps {
-  label: string; value: number; min: number; max: number; step: number;
+  label: string; description?: string; value: number; min: number; max: number; step: number;
   display: (v: number) => string;
   onChange: (v: number) => void;
 }
-function SliderField({ label, value, min, max, step, display, onChange }: SliderFieldProps) {
+function SliderField({ label, description, value, min, max, step, display, onChange }: SliderFieldProps) {
   return (
     <div>
-      <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-        <span className="uppercase tracking-wide">{label}</span>
+      <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+        <span className="uppercase tracking-wide font-medium text-gray-600">{label}</span>
         <span className="font-semibold text-gray-700">{display(value)}</span>
       </div>
+      {description && <p className="text-[10px] text-gray-400 mb-1 leading-tight">{description}</p>}
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={e => onChange(Number(e.target.value))}
         className="w-full h-1.5 accent-blue-600"
+      />
+    </div>
+  );
+}
+
+interface TagFieldProps {
+  label: string; description?: string; value: string; placeholder?: string;
+  onChange: (v: string) => void;
+}
+function TagField({ label, description, value, placeholder, onChange }: TagFieldProps) {
+  return (
+    <div>
+      <div className="text-[10px] font-medium text-gray-600 uppercase tracking-wide mb-0.5">{label}</div>
+      {description && <p className="text-[10px] text-gray-400 mb-1 leading-tight">{description}</p>}
+      <textarea
+        rows={3} value={value} placeholder={placeholder}
+        onChange={e => onChange(e.target.value)}
+        className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs font-mono resize-none focus:outline-none focus:border-blue-300"
       />
     </div>
   );

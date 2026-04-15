@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchCompany, postReEnrich, postReScore } from '../../api/endpoints';
+import { fetchCompany, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
 import type { CompanyDetail } from '../../types';
 import Badge from '../ui/Badge';
 import Spinner from '../ui/Spinner';
@@ -44,6 +44,15 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
 
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${c?.name ?? companyId}"? This removes it and all its contacts/jobs permanently.`)) return;
+    try {
+      await deleteCompany(companyId);
+      toast('Company deleted');
+      onClose();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
   const c = detail?.company;
   const sortedContacts = detail?.contacts ?? [];
 
@@ -59,6 +68,7 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
           <div className="flex items-center gap-2">
             <Button variant="secondary" onClick={handleReEnrich} className="text-indigo-600">↺ Re-enrich</Button>
             <Button variant="secondary" onClick={handleReScore} className="text-amber-600">⚡ Re-score</Button>
+            <Button variant="secondary" onClick={handleDelete} className="text-red-500">✕ Delete</Button>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-1">✕</button>
           </div>
         </div>

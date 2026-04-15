@@ -52,6 +52,9 @@ export const fetchCompany = (id: string) =>
 export const patchCompanyStatus = (id: string, status: LeadStatus) =>
   apiPatch<ApiResponse<{ status: LeadStatus }>>(`/api/companies/${id}/status`, { status });
 
+export const deleteCompany = (id: string) =>
+  apiDelete<ApiResponse<{ success: boolean }>>(`/api/companies/${id}`);
+
 export const postReEnrich = (id: string) =>
   apiPost<ApiResponse<{ runId: string }>>(`/api/companies/${id}/enrich`, {});
 
