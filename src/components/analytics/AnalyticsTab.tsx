@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { fetchStats, fetchQueueStats, fetchLogStats } from '../../api/endpoints';
 import type { Stats, QueueStats, LogStats } from '../../types';
 import Spinner from '../ui/Spinner';
+import Button from '../ui/Button';
 
 // ─── Metric Card ──────────────────────────────────────────────────────────────
 function MetricCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
@@ -95,14 +96,33 @@ export default function AnalyticsTab() {
   const [queueStats, setQueueStats] = useState<QueueStats | null>(null);
   const [logStats,   setLogStats]   = useState<LogStats | null>(null);
   const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([fetchStats(), fetchQueueStats(), fetchLogStats()])
-      .then(([s, q, l]) => { setStats(s.data); setQueueStats(q.data); setLogStats(l.data); })
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [s, q, l] = await Promise.all([fetchStats(), fetchQueueStats(), fetchLogStats()]);
+      setStats(s.data);
+      setQueueStats(q.data);
+      setLogStats(l.data);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+
+  if (error) return (
+    <div className="px-5 py-4 flex flex-col items-center gap-3">
+      <p className="text-sm text-red-500">{error}</p>
+      <Button variant="secondary" onClick={load}>Retry</Button>
+    </div>
+  );
 
   const hot = stats ? stats.hot_verified + stats.hot : 0;
   const convRate = stats?.total ? Math.round((hot / stats.total) * 100) : 0;
@@ -111,6 +131,9 @@ export default function AnalyticsTab() {
 
   return (
     <div className="px-5 py-4 space-y-4">
+      <div className="flex justify-end">
+        <Button variant="secondary" onClick={load} className="text-xs">Refresh</Button>
+      </div>
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-3">
         <MetricCard label="Total Companies"    value={stats?.total ?? 0} />

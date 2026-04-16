@@ -9,16 +9,17 @@ import type { Settings } from '../../types';
 const SOURCES = ['wellfound','linkedin','crunchbase','apollo','indeed','glassdoor','surelyremote','zoominfo','github'];
 
 // ─── Manual Scrape Form ───────────────────────────────────────────────────────
-function ManualScrapeForm({ onScrape }: { onScrape: (src: string, kw: string, limit: number) => Promise<void> }) {
+function ManualScrapeForm({ onScrape }: { onScrape: (src: string, kw: string, limit: number, loc?: string) => Promise<void> }) {
   const [source,   setSource]   = useState(SOURCES[0]);
   const [keywords, setKeywords] = useState('');
+  const [location, setLocation] = useState('');
   const [limit,    setLimit]    = useState(50);
   const [busy,     setBusy]     = useState(false);
 
   const handleSubmit = async () => {
     if (!keywords.trim()) return;
     setBusy(true);
-    try { await onScrape(source, keywords.trim(), limit); }
+    try { await onScrape(source, keywords.trim(), limit, location.trim() || undefined); }
     finally { setBusy(false); }
   };
 
@@ -39,7 +40,19 @@ function ManualScrapeForm({ onScrape }: { onScrape: (src: string, kw: string, li
             type="text"
             value={keywords}
             onChange={e => setKeywords(e.target.value)}
-            placeholder="e.g. react startup US"
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            placeholder="e.g. react saas startup"
+            className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-300"
+          />
+        </div>
+        <div className="flex flex-col gap-0.5 w-36">
+          <label className="text-[10px] text-gray-400 uppercase tracking-wide">Location <span className="normal-case font-normal">(optional)</span></label>
+          <input
+            type="text"
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            placeholder="e.g. United States"
             className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-300"
           />
         </div>
@@ -328,8 +341,8 @@ export default function ControlTab() {
 
       {/* Manual Scrape */}
       <ManualScrapeForm
-        onScrape={(src, kw, limit) =>
-          run(() => actions.postManualScrape(src, kw, limit), `Scrape queued: ${src} "${kw}"`)
+        onScrape={(src, kw, limit, loc) =>
+          run(() => actions.postManualScrape(src, kw, limit, loc), `Scrape queued: ${src} "${kw}"`)
         }
       />
 

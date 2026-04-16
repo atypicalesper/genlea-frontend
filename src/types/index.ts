@@ -87,6 +87,13 @@ export interface Job {
   isActive: boolean;
 }
 
+export interface AgentStep {
+  tool:       string;
+  summary:    string;
+  ts:         string;
+  latencyMs?: number;
+}
+
 export interface ScrapeLog {
   _id: string;
   runId: string;
@@ -99,6 +106,7 @@ export interface ScrapeLog {
   durationMs: number;
   startedAt: string;
   completedAt?: string;
+  agentSteps?: AgentStep[];
 }
 
 // ─── API Response wrappers ────────────────────────────────────────────────────

@@ -6,10 +6,9 @@ import StatsBar from '../layout/StatsBar';
 import LeadsFilters from './LeadsFilters';
 import LeadsTable from './LeadsTable';
 import CompanyModal from './CompanyModal';
+import StatusChangeModal from './StatusChangeModal';
 import { useToast } from '../ui/Toast';
-import type { LeadStatus } from '../../types';
-
-const VALID_STATUSES: LeadStatus[] = ['hot_verified','hot','warm','cold','disqualified','pending'];
+import type { Company, LeadStatus } from '../../types';
 
 interface LeadsTabProps {
   onRegisterRefresh?: (fn: () => void) => void;
@@ -22,6 +21,7 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
   // Register refresh so App.tsx header button can trigger it
   useEffect(() => { onRegisterRefresh?.(refresh); }, [refresh, onRegisterRefresh]);
   const [modalId, setModalId] = useState<string | null>(null);
+  const [statusTarget, setStatusTarget] = useState<Company | null>(null);
   const { toast } = useToast();
 
   const handleSort = (col: string) => {
@@ -31,12 +31,18 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
     });
   };
 
-  const handleStatusChange = async (id: string, current: string) => {
-    const next = prompt(`Set status:\n${VALID_STATUSES.join(', ')}\n\nCurrent: ${current}`)?.trim();
-    if (!next || !VALID_STATUSES.includes(next as LeadStatus)) return;
+  const handleStatusChange = (id: string) => {
+    const company = companies.find(c => c._id === id);
+    if (company) setStatusTarget(company);
+  };
+
+  const handleStatusConfirm = async (next: LeadStatus) => {
+    if (!statusTarget) return;
+    const { _id, name } = statusTarget;
+    setStatusTarget(null);
     try {
-      await patchCompanyStatus(id, next as LeadStatus);
-      toast('Status updated to ' + next);
+      await patchCompanyStatus(_id, next);
+      toast('Status updated to ' + next + ' for ' + name);
       refresh();
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
@@ -75,6 +81,15 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
       />
 
       <CompanyModal companyId={modalId} onClose={() => setModalId(null)} />
+
+      {statusTarget && (
+        <StatusChangeModal
+          companyName={statusTarget.name}
+          currentStatus={statusTarget.status}
+          onConfirm={handleStatusConfirm}
+          onClose={() => setStatusTarget(null)}
+        />
+      )}
 
       {/* Last refresh indicator */}
       <div className="px-5 pb-2 text-[10px] text-gray-400">{lastRefresh}</div>

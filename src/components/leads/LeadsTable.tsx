@@ -1,7 +1,27 @@
-import type { Company, Contact, ActiveJob, LeadFilters, SortDir } from '../../types';
+import type { Company, Contact, ActiveJob, LeadFilters, PipelineStatus, SortDir } from '../../types';
 import Badge from '../ui/Badge';
 import Spinner from '../ui/Spinner';
 import ContactChip from './ContactChip';
+
+const PIPELINE_STEPS: PipelineStatus[] = ['discovered', 'enriching', 'enriched', 'scoring', 'scored'];
+
+function PipelineDots({ status, live }: { status: PipelineStatus; live?: boolean }) {
+  const idx = PIPELINE_STEPS.indexOf(status);
+  return (
+    <div className="flex items-center gap-[3px] mt-0.5" title={`Pipeline: ${status}`}>
+      {PIPELINE_STEPS.map((step, i) => (
+        <div
+          key={step}
+          className={`w-1.5 h-1.5 rounded-full transition-colors ${
+            i < idx  ? 'bg-green-400' :
+            i === idx ? (live ? 'bg-emerald-500 animate-pulse' : 'bg-blue-400') :
+            'bg-gray-200'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
 interface LeadsTableProps {
   companies: Company[];
@@ -15,7 +35,7 @@ interface LeadsTableProps {
   onSort: (col: string) => void;
   onPageChange: (delta: number) => void;
   onOpenCompany: (id: string) => void;
-  onStatusChange: (id: string, current: string) => void;
+  onStatusChange: (id: string) => void;
 }
 
 const SORT_COLS = ['name','score','originRatio','fundingStage','employeeCount'];
@@ -125,6 +145,9 @@ export default function LeadsTable({
                   <td className="px-4 py-2.5 max-w-[180px]">
                     <div className="font-medium text-gray-900 truncate">{c.name || '—'}</div>
                     <div className="text-[10px] text-blue-500 truncate">{c.domain}</div>
+                    {c.pipelineStatus && (
+                      <PipelineDots status={c.pipelineStatus} live={!!livePhase} />
+                    )}
                   </td>
                   <td className={`px-4 py-2.5 font-bold ${scoreColor(c.score)}`}>
                     {c.score > 0 ? c.score : '—'}
@@ -174,7 +197,7 @@ export default function LeadsTable({
                   <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                     <div className="flex gap-1">
                       <button
-                        onClick={() => onStatusChange(c._id, c.status)}
+                        onClick={() => onStatusChange(c._id)}
                         className="px-2 py-1 border border-gray-200 rounded text-[10px] hover:bg-gray-50"
                         title="Change status"
                       >✎</button>

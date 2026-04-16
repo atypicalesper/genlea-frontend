@@ -84,10 +84,10 @@ export const postRetryFailed = (queue: 'discovery' | 'enrichment' | 'scoring') =
 export const deleteQueueDrain = (queue: 'discovery' | 'enrichment' | 'scoring') =>
   apiDelete<ApiResponse<{ message: string }>>(`/api/jobs/clear/${queue}`);
 
-export const postManualScrape = (source: string, keywords: string, limit: number) =>
+export const postManualScrape = (source: string, keywords: string, limit: number, location?: string) =>
   apiPost<ApiResponse<{ runId: string; message: string }>>('/api/scrape', {
     source,
-    query: { keywords, location: 'United States', limit },
+    query: { keywords, limit, ...(location ? { location } : {}) },
   });
 
 // ── Logs ──────────────────────────────────────────────────────────────────────
