@@ -134,10 +134,14 @@ export default function LeadsTable({
           <tbody>
             {loading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
             {error && !loading && (
-              <tr><td colSpan={11} className="px-4 py-8 text-center">
-                <div className="flex flex-col items-center gap-2 text-red-400">
-                  <span className="text-2xl">⚠</span>
-                  <span className="font-medium">{error}</span>
+              <tr><td colSpan={11} className="px-4 py-10 text-center">
+                <div className="flex flex-col items-center gap-3 text-gray-400">
+                  <span className="text-3xl select-none">🔌</span>
+                  <span className="text-sm font-medium text-gray-600">Backend not running</span>
+                  <code className="text-[11px] bg-gray-100 text-gray-500 rounded px-3 py-1.5 font-mono">
+                    npm run dev -w services/svc-api
+                  </code>
+                  <span className="text-[10px] text-gray-300">{error}</span>
                 </div>
               </td></tr>
             )}

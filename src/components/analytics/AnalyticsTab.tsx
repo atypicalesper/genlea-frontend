@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchStats, fetchQueueStats, fetchLogStats } from '../../api/endpoints';
 import type { Stats, QueueStats, LogStats } from '../../types';
 import AnalyticsSkeleton from '../ui/skeletons/AnalyticsSkeleton';
+import ApiOffline from '../ui/ApiOffline';
 import Button from '../ui/Button';
 
 // ─── Metric Card ──────────────────────────────────────────────────────────────
@@ -118,10 +119,10 @@ export default function AnalyticsTab() {
   if (loading) return <AnalyticsSkeleton />;
 
   if (error) return (
-    <div className="px-5 py-4 flex flex-col items-center gap-3">
-      <p className="text-sm text-red-500">{error}</p>
-      <Button variant="secondary" onClick={load}>Retry</Button>
-    </div>
+    <>
+      <ApiOffline error={error} onRetry={load} />
+      <div className="opacity-20 pointer-events-none select-none"><AnalyticsSkeleton /></div>
+    </>
   );
 
   const hot = stats ? stats.hot_verified + stats.hot : 0;

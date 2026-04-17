@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLogs } from '../../hooks/useLogs';
 import Badge from '../ui/Badge';
+import ApiOffline from '../ui/ApiOffline';
+import LogsSkeleton from '../ui/skeletons/LogsSkeleton';
 import { Skeleton, SkeletonBadge, SkeletonText } from '../ui/Skeleton';
 import type { ScrapeLog, AgentStep } from '../../types';
 
@@ -125,8 +127,15 @@ function LogRow({ log, onShowErrors }: { log: ScrapeLog; onShowErrors: (errors: 
 // ─── LogsTab ──────────────────────────────────────────────────────────────────
 export default function LogsTab() {
   const [scraperFilter, setScraperFilter] = useState('');
-  const { logs, stats, loading, error } = useLogs(scraperFilter || undefined);
+  const { logs, stats, loading, error, refresh } = useLogs(scraperFilter || undefined);
   const [popoverErrors, setPopoverErrors] = useState<string[] | null>(null);
+
+  if (error && !logs.length) return (
+    <>
+      <ApiOffline error={error} onRetry={refresh} />
+      <div className="opacity-20 pointer-events-none select-none"><LogsSkeleton /></div>
+    </>
+  );
 
   return (
     <div className="px-5 py-4">

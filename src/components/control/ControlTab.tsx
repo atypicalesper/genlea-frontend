@@ -4,6 +4,7 @@ import { useToast } from '../ui/Toast';
 import QueueCard from './QueueCard';
 import Button from '../ui/Button';
 import ControlSkeleton from '../ui/skeletons/ControlSkeleton';
+import ApiOffline from '../ui/ApiOffline';
 import type { Settings } from '../../types';
 
 const SOURCES = ['wellfound','linkedin','crunchbase','apollo','indeed','glassdoor','surelyremote','zoominfo','github'];
@@ -284,7 +285,7 @@ function ActiveJobsPanel({ jobs }: { jobs: { queue: string; name: string; domain
 
 // ─── ControlTab ───────────────────────────────────────────────────────────────
 export default function ControlTab() {
-  const { queueStats, cronInfo, activeJobs, settings, loading, error, actions, saveSettings } = useControl();
+  const { queueStats, cronInfo, activeJobs, settings, loading, error, refresh, actions, saveSettings } = useControl();
   const { toast } = useToast();
 
   const run = async (fn: () => Promise<{ data: { message?: string; runId?: string; queued?: number; retried?: number } }>, msg?: string) => {
@@ -296,8 +297,11 @@ export default function ControlTab() {
 
   if (loading && !queueStats) return <ControlSkeleton />;
 
-  if (error) return (
-    <div className="p-5 text-red-500 text-sm">{error}</div>
+  if (error && !queueStats) return (
+    <>
+      <ApiOffline error={error} onRetry={refresh} />
+      <div className="opacity-20 pointer-events-none select-none"><ControlSkeleton /></div>
+    </>
   );
 
   const queues = ['discovery', 'enrichment', 'scoring'] as const;
