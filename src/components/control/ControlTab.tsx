@@ -3,7 +3,7 @@ import { useControl } from '../../hooks/useControl';
 import { useToast } from '../ui/Toast';
 import QueueCard from './QueueCard';
 import Button from '../ui/Button';
-import Spinner from '../ui/Spinner';
+import ControlSkeleton from '../ui/skeletons/ControlSkeleton';
 import type { Settings } from '../../types';
 
 const SOURCES = ['wellfound','linkedin','crunchbase','apollo','indeed','glassdoor','surelyremote','zoominfo','github'];
@@ -294,9 +294,7 @@ export default function ControlTab() {
     } catch (e) { toast('Error: ' + (e as Error).message); }
   };
 
-  if (loading && !queueStats) return (
-    <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-  );
+  if (loading && !queueStats) return <ControlSkeleton />;
 
   if (error) return (
     <div className="p-5 text-red-500 text-sm">{error}</div>

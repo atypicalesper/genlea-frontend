@@ -1,14 +1,38 @@
 import type { Company, Contact, ActiveJob, LeadFilters, PipelineStatus, SortDir } from '../../types';
 import Badge from '../ui/Badge';
-import Spinner from '../ui/Spinner';
 import ContactChip from './ContactChip';
+import { Skeleton, SkeletonBadge, SkeletonText } from '../ui/Skeleton';
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="px-4 py-2.5 max-w-45">
+        <SkeletonText w="w-28" h="h-3.5" />
+        <SkeletonText w="w-20" h="h-2.5" />
+        <div className="flex gap-0.75 mt-1">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="w-1.5 h-1.5 rounded-full" />)}
+        </div>
+      </td>
+      <td className="px-4 py-2.5"><SkeletonText w="w-6" h="h-4" /></td>
+      <td className="px-4 py-2.5"><SkeletonText w="w-10" h="h-3.5" /></td>
+      <td className="px-4 py-2.5"><SkeletonText w="w-16" h="h-3" /></td>
+      <td className="px-4 py-2.5"><SkeletonText w="w-8" h="h-3" /></td>
+      <td className="px-4 py-2.5"><SkeletonBadge /></td>
+      <td className="px-4 py-2.5"><div className="flex gap-1"><Skeleton className="h-4 w-12 rounded" /><Skeleton className="h-4 w-10 rounded" /></div></td>
+      <td className="px-4 py-2.5"><div className="flex gap-1"><Skeleton className="h-4 w-16 rounded" /></div></td>
+      <td className="px-4 py-2.5"><div className="flex gap-1"><Skeleton className="h-4 w-14 rounded" /><Skeleton className="h-4 w-10 rounded" /></div></td>
+      <td className="px-4 py-2.5"><div className="flex flex-col gap-0.5"><SkeletonText w="w-32" h="h-3" /><SkeletonText w="w-24" h="h-2.5" /></div></td>
+      <td className="px-4 py-2.5"><div className="flex gap-1"><Skeleton className="h-6 w-6 rounded" /><Skeleton className="h-6 w-6 rounded" /></div></td>
+    </tr>
+  );
+}
 
 const PIPELINE_STEPS: PipelineStatus[] = ['discovered', 'enriching', 'enriched', 'scoring', 'scored'];
 
 function PipelineDots({ status, live }: { status: PipelineStatus; live?: boolean }) {
   const idx = PIPELINE_STEPS.indexOf(status);
   return (
-    <div className="flex items-center gap-[3px] mt-0.5" title={`Pipeline: ${status}`}>
+    <div className="flex items-center gap-0.75 mt-0.5" title={`Pipeline: ${status}`}>
       {PIPELINE_STEPS.map((step, i) => (
         <div
           key={step}
@@ -108,14 +132,7 @@ export default function LeadsTable({
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr><td colSpan={11} className="px-4 py-10 text-center">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <Spinner size="lg" />
-                  <span>Loading companies…</span>
-                </div>
-              </td></tr>
-            )}
+            {loading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
             {error && !loading && (
               <tr><td colSpan={11} className="px-4 py-8 text-center">
                 <div className="flex flex-col items-center gap-2 text-red-400">
@@ -142,7 +159,7 @@ export default function LeadsTable({
                   className={`border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${livePhase ? 'bg-emerald-50/30' : ''}`}
                   onClick={() => onOpenCompany(c._id)}
                 >
-                  <td className="px-4 py-2.5 max-w-[180px]">
+                  <td className="px-4 py-2.5 max-w-45">
                     <div className="font-medium text-gray-900 truncate">{c.name || '—'}</div>
                     <div className="text-[10px] text-blue-500 truncate">{c.domain}</div>
                     {c.pipelineStatus && (

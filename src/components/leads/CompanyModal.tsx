@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchCompany, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
 import type { CompanyDetail } from '../../types';
 import Badge from '../ui/Badge';
-import Spinner from '../ui/Spinner';
+import ModalSkeleton from '../ui/skeletons/ModalSkeleton';
 import Button from '../ui/Button';
 import { useToast } from '../ui/Toast';
 
@@ -75,7 +75,7 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
 
         {/* Body */}
         <div className="px-6 py-4">
-          {loading && <div className="flex justify-center py-10"><Spinner size="lg" /></div>}
+          {loading && <ModalSkeleton />}
           {error && <div className="text-red-500 py-6 text-center">{error}</div>}
 
           {detail && c && (

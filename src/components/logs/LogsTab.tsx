@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { useLogs } from '../../hooks/useLogs';
 import Badge from '../ui/Badge';
-import Spinner from '../ui/Spinner';
+import { Skeleton, SkeletonBadge, SkeletonText } from '../ui/Skeleton';
 import type { ScrapeLog, AgentStep } from '../../types';
+
+function LogRowSkeleton() {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="px-4 py-2"><SkeletonText w="w-32" h="h-3" /></td>
+      <td className="px-4 py-2"><SkeletonText w="w-20" h="h-3" /></td>
+      <td className="px-4 py-2"><SkeletonBadge /></td>
+      <td className="px-4 py-2"><SkeletonText w="w-6" h="h-3" /></td>
+      <td className="px-4 py-2"><SkeletonText w="w-6" h="h-3" /></td>
+      <td className="px-4 py-2"><SkeletonText w="w-12" h="h-3" /></td>
+      <td className="px-4 py-2"><Skeleton className="h-3 w-10" /></td>
+      <td className="px-4 py-2"><Skeleton className="h-3 w-14" /></td>
+    </tr>
+  );
+}
 
 const SCRAPERS = ['','wellfound','linkedin','crunchbase','apollo','indeed','glassdoor','surelyremote','zoominfo','github','hunter','clearbit','explorium','agent'];
 
@@ -46,7 +61,7 @@ function AgentStepsPanel({ steps }: { steps: AgentStep[] }) {
         <div key={i} className="flex items-start gap-2 text-[11px]">
           <span className="shrink-0 w-4 text-gray-400 text-right">{i + 1}.</span>
           <span className="shrink-0 font-mono text-blue-600 w-36 truncate">{step.tool}</span>
-          <span className="text-gray-600 flex-1 min-w-0 break-words">{step.summary}</span>
+          <span className="text-gray-600 flex-1 min-w-0 wrap-break-word">{step.summary}</span>
           {step.latencyMs != null && (
             <span className="shrink-0 text-gray-400">{step.latencyMs}ms</span>
           )}
@@ -138,13 +153,7 @@ export default function LogsTab() {
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <Spinner size="lg" /><span>Loading logs…</span>
-                </div>
-              </td></tr>
-            )}
+            {loading && Array.from({ length: 10 }).map((_, i) => <LogRowSkeleton key={i} />)}
             {error && !loading && (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-red-400">{error}</td></tr>
             )}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchStats, fetchQueueStats, fetchLogStats } from '../../api/endpoints';
 import type { Stats, QueueStats, LogStats } from '../../types';
-import Spinner from '../ui/Spinner';
+import AnalyticsSkeleton from '../ui/skeletons/AnalyticsSkeleton';
 import Button from '../ui/Button';
 
 // ─── Metric Card ──────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function AnalyticsTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
+  if (loading) return <AnalyticsSkeleton />;
 
   if (error) return (
     <div className="px-5 py-4 flex flex-col items-center gap-3">

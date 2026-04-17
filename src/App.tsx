@@ -1,24 +1,26 @@
-import { useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState } from 'react';
 import { ToastProvider } from './components/ui/Toast';
 import Header from './components/layout/Header';
 import ActivityBar from './components/layout/ActivityBar';
-import LeadsTab from './components/leads/LeadsTab';
-import ControlTab from './components/control/ControlTab';
-import LogsTab from './components/logs/LogsTab';
-import AnalyticsTab from './components/analytics/AnalyticsTab';
-import QueueMonitorTab from './components/queues/QueueMonitorTab';
 import { useActivityJobs } from './hooks/useActivityJobs';
+import TableSkeleton from './components/ui/skeletons/TableSkeleton';
+import ControlSkeleton from './components/ui/skeletons/ControlSkeleton';
+import LogsSkeleton from './components/ui/skeletons/LogsSkeleton';
+import AnalyticsSkeleton from './components/ui/skeletons/AnalyticsSkeleton';
+
+// ─── Lazy-loaded tabs ─────────────────────────────────────────────────────────
+const LeadsTab       = lazy(() => import('./components/leads/LeadsTab'));
+const ControlTab     = lazy(() => import('./components/control/ControlTab'));
+const LogsTab        = lazy(() => import('./components/logs/LogsTab'));
+const AnalyticsTab   = lazy(() => import('./components/analytics/AnalyticsTab'));
+const QueueMonitorTab = lazy(() => import('./components/queues/QueueMonitorTab'));
 
 export type Tab = 'leads' | 'control' | 'logs' | 'analytics' | 'queues';
 
-// ─── AppShell: layout + tab routing ──────────────────────────────────────────
 function AppShell() {
   const [activeTab, setActiveTab] = useState<Tab>('leads');
   const activeJobs = useActivityJobs(20_000);
-
-  // LeadsTab owns its own refresh — expose a trigger ref so Header can call it
   const leadsRefreshRef = useRef<(() => void) | null>(null);
-  const handleHeaderRefresh = () => leadsRefreshRef.current?.();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -26,16 +28,33 @@ function AppShell() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         lastRefresh=""
-        onRefresh={handleHeaderRefresh}
+        onRefresh={() => leadsRefreshRef.current?.()}
       />
       <ActivityBar jobs={activeJobs} />
 
       <main className="flex-1">
-        {activeTab === 'leads'     && <LeadsTab onRegisterRefresh={fn => { leadsRefreshRef.current = fn; }} />}
-        {activeTab === 'control'   && <ControlTab />}
-        {activeTab === 'logs'      && <LogsTab />}
-        {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'queues'    && <QueueMonitorTab />}
+        {/* Each tab has its own Suspense so the fallback matches the tab's layout */}
+        <Suspense fallback={<TableSkeleton />}>
+          {activeTab === 'leads' && (
+            <LeadsTab onRegisterRefresh={fn => { leadsRefreshRef.current = fn; }} />
+          )}
+        </Suspense>
+
+        <Suspense fallback={<ControlSkeleton />}>
+          {activeTab === 'control' && <ControlTab />}
+        </Suspense>
+
+        <Suspense fallback={<LogsSkeleton />}>
+          {activeTab === 'logs' && <LogsTab />}
+        </Suspense>
+
+        <Suspense fallback={<AnalyticsSkeleton />}>
+          {activeTab === 'analytics' && <AnalyticsTab />}
+        </Suspense>
+
+        <Suspense fallback={null}>
+          {activeTab === 'queues' && <QueueMonitorTab />}
+        </Suspense>
       </main>
     </div>
   );
