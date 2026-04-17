@@ -107,7 +107,7 @@ function SettingsPanel({
       <div className="grid grid-cols-2 gap-4 text-xs">
         <SliderField
           label="Origin Ratio Threshold"
-          description="Minimum fraction of engineers that must appear to be of Indian origin. Lower = wider net; higher = stronger signal. Contributes up to 30/100 pts."
+          description="Minimum Indian-origin dev ratio to consider a company. ↓ Lower → wider pipeline, more noise. ↑ Higher → fewer but stronger leads. Worth up to 30 pts."
           value={local.originRatioThreshold}
           min={0.05} max={0.95} step={0.05}
           display={v => `${Math.round(v * 100)}%`}
@@ -115,7 +115,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Min Name Sample"
-          description="How many developer names must be collected before the origin ratio is trusted. Below this count the ratio defaults to a neutral 10/30 instead of 0."
+          description="Names needed before the ratio is trusted. ↓ Lower → ratio scored sooner but may be unreliable with few names. ↑ Higher → more companies fall back to neutral 10/30 pts until enough names are found."
           value={local.originRatioMinSample}
           min={5} max={100} step={5}
           display={v => String(v)}
@@ -123,7 +123,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Hot Verified Threshold"
-          description="Score at or above this = Hot Verified (top-priority leads with confirmed contacts and strong signal)."
+          description="Minimum score for Hot Verified status. ↓ Lower → more leads reach top priority, risking false positives. ↑ Higher → only the highest-confidence leads get immediate outreach — smaller but cleaner list."
           value={local.leadScoreHotVerifiedThreshold}
           min={50} max={100} step={5}
           display={v => String(v)}
@@ -131,7 +131,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Hot Threshold"
-          description="Score at or above this (but below Hot Verified) = Hot. Most criteria met but may lack a verified email or have a small name sample."
+          description="Minimum score for Hot status. ↓ Lower → Hot list grows, more companies to outreach. ↑ Higher → Hot list shrinks, more leads fall to Warm and need nurturing first."
           value={local.leadScoreHotThreshold}
           min={40} max={90} step={5}
           display={v => String(v)}
@@ -139,7 +139,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Warm Threshold"
-          description="Score at or above this (but below Hot) = Warm. Shows some signal — good for follow-up after the Hot pool is worked."
+          description="Minimum score for Warm status. ↓ Lower → more companies enter the nurture pipeline. ↑ Higher → Warm list shrinks, more companies go straight to Cold and are deprioritised."
           value={local.leadScoreWarmThreshold}
           min={20} max={70} step={5}
           display={v => String(v)}
@@ -147,7 +147,7 @@ function SettingsPanel({
         />
         <SliderField
           label="Cold Threshold"
-          description="Score at or above this (but below Warm) = Cold. Below this threshold companies are disqualified automatically."
+          description="Minimum score to stay in pipeline as Cold. ↓ Lower → more companies kept for review later, larger DB. ↑ Higher → more companies auto-disqualified — keeps the pipeline lean but risks dropping borderline leads."
           value={local.leadScoreColdThreshold}
           min={5} max={40} step={5}
           display={v => String(v)}
@@ -158,14 +158,14 @@ function SettingsPanel({
         <div className="col-span-2 border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
           <TagField
             label="Target Tech Stack Tags"
-            description="Comma-separated tags that score positively (up to 20 pts). ai, ml, generative-ai score 5 pts each; all others 3 pts each."
+            description="Tags that score positively (up to 20 pts). Fewer tags = stricter match, smaller pipeline. More tags = more companies qualify but signal is diluted. ai, ml, generative-ai score 5 pts each; all others 3 pts."
             value={techTagsText}
             onChange={setTechTagsText}
             placeholder="nodejs, typescript, python, react, ai, ml"
           />
           <TagField
             label="High-Value Industries"
-            description="Comma-separated industry keywords (substring match). Companies matching any get +3 pts in Company Fit. Companies with no industry data get the bonus automatically (failsafe)."
+            description="Industry keywords that add +3 pts to Company Fit (substring match). Fewer keywords = only exact-fit industries rewarded. More keywords = broader bonus, less differentiation. Companies with no industry data always get the bonus."
             value={industriesText}
             onChange={setIndustriesText}
             placeholder="ai, saas, fintech, healthtech, edtech"
@@ -180,7 +180,7 @@ function SettingsPanel({
           <div className="grid grid-cols-3 gap-2">
             <SliderField
               label="Discovery"
-              description="Concurrent discovery jobs pulling from scrapers."
+              description="↓ Lower → less RAM + CPU, slower pipeline fill. ↑ Higher → faster discovery but each extra worker adds ~400MB RAM (Playwright). Max 2 recommended on 18GB."
               value={local.workerConcurrencyDiscovery}
               min={1} max={20} step={1}
               display={v => String(v)}
@@ -188,7 +188,7 @@ function SettingsPanel({
             />
             <SliderField
               label="Enrichment"
-              description="Concurrent enrichment jobs (GitHub, Clearbit, Hunter, etc.)."
+              description="↓ Lower → less RAM, fewer browser sessions. ↑ Higher → enriches companies faster but each Playwright job uses ~400MB. Most memory-intensive worker — keep at 1 on 18GB."
               value={local.workerConcurrencyEnrichment}
               min={1} max={20} step={1}
               display={v => String(v)}
@@ -196,7 +196,7 @@ function SettingsPanel({
             />
             <SliderField
               label="Scoring"
-              description="Concurrent scoring jobs — these are CPU-light so can run high."
+              description="↓ Lower → no real downside, scoring is instant. ↑ Higher → scores backlog faster with no memory risk — safe to raise, scoring uses no Playwright or LLM calls."
               value={local.workerConcurrencyScoring}
               min={1} max={30} step={1}
               display={v => String(v)}
