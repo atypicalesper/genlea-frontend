@@ -114,10 +114,11 @@ export default function LeadsTable({
   );
 
   return (
-    <div className="px-5 py-3">
-      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-50 border-b border-gray-200">
+    <div className="py-3">
+      <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/88 shadow-sm shadow-slate-900/5 backdrop-blur-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[1180px] text-xs">
+          <thead className="sticky top-0 z-10 bg-slate-50/95 border-b border-slate-200 backdrop-blur-sm">
             <tr>
               {SORT_COLS.map(col => (
                 <SortTh key={col} col={col} label={col === 'originRatio' ? 'Origin %' : col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
@@ -134,22 +135,22 @@ export default function LeadsTable({
           <tbody>
             {loading && Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
             {error && !loading && (
-              <tr><td colSpan={11} className="px-4 py-10 text-center">
-                <div className="flex flex-col items-center gap-3 text-gray-400">
+              <tr><td colSpan={11} className="px-4 py-12 text-center">
+                <div className="flex flex-col items-center gap-3 text-slate-400">
                   <span className="text-3xl select-none">🔌</span>
-                  <span className="text-sm font-medium text-gray-600">Backend not running</span>
-                  <code className="text-[11px] bg-gray-100 text-gray-500 rounded px-3 py-1.5 font-mono">
+                  <span className="text-sm font-medium text-slate-700">Backend not running</span>
+                  <code className="text-[11px] bg-slate-100 text-slate-500 rounded-xl px-3 py-1.5 font-mono">
                     npm run dev -w services/svc-api
                   </code>
-                  <span className="text-[10px] text-gray-300">{error}</span>
+                  <span className="text-[10px] text-slate-300">{error}</span>
                 </div>
               </td></tr>
             )}
             {!loading && !error && companies.length === 0 && (
-              <tr><td colSpan={11} className="px-4 py-12 text-center">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
+              <tr><td colSpan={11} className="px-4 py-14 text-center">
+                <div className="flex flex-col items-center gap-2 text-slate-400">
                   <div className="text-3xl">📭</div>
-                  <div className="font-medium text-gray-600">No companies found</div>
+                  <div className="font-medium text-slate-700">No companies found</div>
                   <div className="text-xs">Try adjusting filters or run a seed from the Control Panel</div>
                 </div>
               </td></tr>
@@ -160,12 +161,12 @@ export default function LeadsTable({
               return (
                 <tr
                   key={c._id}
-                  className={`border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${livePhase ? 'bg-emerald-50/30' : ''}`}
+                  className={`border-b border-slate-100 cursor-pointer hover:bg-slate-50/70 ${livePhase ? 'bg-emerald-50/30' : ''}`}
                   onClick={() => onOpenCompany(c._id)}
                 >
                   <td className="px-4 py-2.5 max-w-45">
-                    <div className="font-medium text-gray-900 truncate">{c.name || '—'}</div>
-                    <div className="text-[10px] text-blue-500 truncate">{c.domain}</div>
+                    <div className="font-medium text-slate-900 truncate">{c.name || '—'}</div>
+                    <div className="text-[10px] text-teal-700 truncate">{c.domain}</div>
                     {c.pipelineStatus && (
                       <PipelineDots status={c.pipelineStatus} live={!!livePhase} />
                     )}
@@ -176,8 +177,8 @@ export default function LeadsTable({
                   <td className={`px-4 py-2.5 font-semibold ${ratioColor(c.originRatio)}`}>
                     {c.originRatio != null ? `${Math.round(c.originRatio * 100)}%` : '—'}
                   </td>
-                  <td className="px-4 py-2.5 text-gray-500">{c.fundingStage ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{c.employeeCount ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-slate-500">{c.fundingStage ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-slate-600">{c.employeeCount ?? '—'}</td>
                   <td className="px-4 py-2.5">
                     {livePhase
                       ? <><Badge status={c.status} className="opacity-50 mr-1" /><Badge status={livePhase} /></>
@@ -187,21 +188,21 @@ export default function LeadsTable({
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {c.techStack.slice(0, 4).map(t => (
-                        <span key={t} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">{t}</span>
+                        <span key={t} className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">{t}</span>
                       ))}
                     </div>
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {c.openRoles.slice(0, 2).map(r => (
-                        <span key={r} className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded text-[10px]">{r}</span>
+                        <span key={r} className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px]">{r}</span>
                       ))}
                     </div>
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {c.sources.slice(0, 3).map(s => (
-                        <span key={s} className="bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded text-[10px]">{s}</span>
+                        <span key={s} className="bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded text-[10px]">{s}</span>
                       ))}
                     </div>
                   </td>
@@ -210,21 +211,21 @@ export default function LeadsTable({
                       <div className="flex flex-col gap-0.5">
                         {rowContacts.slice(0, 3).map(p => <ContactChip key={p._id} contact={p} />)}
                         {rowContacts.length > 3 && (
-                          <span className="text-[10px] text-gray-400">+{rowContacts.length - 3} more</span>
+                          <span className="text-[10px] text-slate-400">+{rowContacts.length - 3} more</span>
                         )}
                       </div>
-                    ) : <span className="text-gray-300 text-[10px]">—</span>}
+                    ) : <span className="text-slate-300 text-[10px]">—</span>}
                   </td>
                   <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                     <div className="flex gap-1">
                       <button
                         onClick={() => onStatusChange(c._id)}
-                        className="px-2 py-1 border border-gray-200 rounded text-[10px] hover:bg-gray-50"
+                        className="px-2 py-1 border border-slate-200 rounded-xl text-[10px] hover:bg-slate-50"
                         title="Change status"
                       >✎</button>
                       <button
                         onClick={() => onOpenCompany(c._id)}
-                        className="px-2 py-1 border border-gray-200 rounded text-[10px] hover:bg-gray-50"
+                        className="px-2 py-1 border border-slate-200 rounded-xl text-[10px] hover:bg-slate-50"
                         title="View detail"
                       >→</button>
                     </div>
@@ -234,21 +235,22 @@ export default function LeadsTable({
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between mt-2.5 text-xs text-gray-500">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mt-3 text-xs text-slate-500">
         <span>Page {filters.page} of {totalPages} — {totalCount} companies</span>
         <div className="flex gap-2">
           <button
             disabled={filters.page <= 1}
             onClick={() => onPageChange(-1)}
-            className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white/80 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
           >← Prev</button>
           <button
             disabled={filters.page >= totalPages}
             onClick={() => onPageChange(1)}
-            className="px-3 py-1.5 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 border border-slate-200 rounded-xl bg-white/80 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
           >Next →</button>
         </div>
       </div>

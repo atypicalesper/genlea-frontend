@@ -23,7 +23,7 @@ function AppShell() {
   const leadsRefreshRef = useRef<(() => void) | null>(null);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Header
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -32,7 +32,7 @@ function AppShell() {
       />
       <ActivityBar jobs={activeJobs} />
 
-      <main className="flex-1">
+      <main className="flex-1 px-3 pb-4 pt-3 sm:px-4 lg:px-6">
         {/* Each tab has its own Suspense so the fallback matches the tab's layout */}
         <Suspense fallback={<TableSkeleton />}>
           {activeTab === 'leads' && (

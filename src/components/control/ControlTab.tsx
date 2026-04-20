@@ -104,7 +104,7 @@ function SettingsPanel({
       <p className="text-[10px] text-gray-400 mb-4">
         Controls how companies are qualified — changes take effect on the next enrichment/scoring run.
       </p>
-      <div className="grid grid-cols-2 gap-4 text-xs">
+      <div className="grid gap-4 text-xs md:grid-cols-2">
         <SliderField
           label="Origin Ratio Threshold"
           description="Minimum Indian-origin dev ratio to consider a company. ↓ Lower → wider pipeline, more noise. ↑ Higher → fewer but stronger leads. Worth up to 30 pts."
@@ -155,7 +155,7 @@ function SettingsPanel({
         />
 
         {/* Tag editors — full width */}
-        <div className="col-span-2 border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
+        <div className="col-span-full border-t border-gray-100 pt-4 grid gap-4 md:grid-cols-2">
           <TagField
             label="Target Tech Stack Tags"
             description="Tags that score positively (up to 20 pts). Fewer tags = stricter match, smaller pipeline. More tags = more companies qualify but signal is diluted. ai, ml, generative-ai score 5 pts each; all others 3 pts."
@@ -172,12 +172,12 @@ function SettingsPanel({
           />
         </div>
 
-        <div className="col-span-2 border-t border-gray-100 pt-4">
+        <div className="col-span-full border-t border-gray-100 pt-4">
           <div className="text-gray-400 uppercase tracking-wide text-[10px] mb-2">
             Worker Concurrency
             <span className="normal-case ml-1 font-normal">— max parallel jobs per queue</span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid gap-2 md:grid-cols-3">
             <SliderField
               label="Discovery"
               description="↓ Lower → less RAM + CPU, slower pipeline fill. ↑ Higher → faster discovery but each extra worker adds ~400MB RAM (Playwright). Max 2 recommended on 18GB."
@@ -307,9 +307,9 @@ export default function ControlTab() {
   const queues = ['discovery', 'enrichment', 'scoring'] as const;
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="space-y-4">
       {/* Queue Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {queues.map(q => queueStats && (
           <QueueCard
             key={q}

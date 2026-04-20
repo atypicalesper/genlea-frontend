@@ -36,13 +36,13 @@ export default function StatsBar({ stats, segment, onSegmentChange }: StatsBarPr
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 flex overflow-x-auto">
+    <div className="mb-3 overflow-x-auto rounded-3xl border border-slate-200 bg-white/85 p-1 shadow-sm shadow-slate-900/5">
       {PILLS.map(pill => (
         <button
           key={pill.id}
           onClick={() => onSegmentChange(pill.id)}
-          className={`flex flex-col items-center justify-center gap-px px-4 py-2 border-r border-gray-100 last:border-r-0 transition-colors ${
-            segment === pill.id ? 'bg-blue-50' : 'hover:bg-gray-50'
+          className={`min-w-[92px] rounded-2xl px-4 py-2.5 transition-colors ${
+            segment === pill.id ? 'bg-teal-50 text-teal-900' : 'hover:bg-slate-50'
           }`}
         >
           <span className={`text-[10px] uppercase tracking-wide font-medium ${pill.color}`}>{pill.label}</span>

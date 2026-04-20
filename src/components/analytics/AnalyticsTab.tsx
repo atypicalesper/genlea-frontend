@@ -131,12 +131,12 @@ export default function AnalyticsTab() {
     ? Math.round((logStats.success / logStats.total) * 100) : 0;
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="space-y-4">
       <div className="flex justify-end">
         <Button variant="secondary" onClick={load} className="text-xs">Refresh</Button>
       </div>
       {/* KPI row */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Total Companies"    value={stats?.total ?? 0} />
         <MetricCard label="Hot Leads"          value={hot}                color="text-red-500" />
         <MetricCard label="Conversion Rate"    value={`${convRate}%`}     color="text-emerald-600"
@@ -149,7 +149,7 @@ export default function AnalyticsTab() {
       {queueStats && <QueueSummary qs={queueStats} />}
 
       {logStats && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           <MetricCard label="Scrape Runs"    value={logStats.total} />
           <MetricCard label="Partial Runs"   value={logStats.partial}  color="text-yellow-600" />
           <MetricCard label="Failed Runs"    value={logStats.failed}   color="text-red-500" />

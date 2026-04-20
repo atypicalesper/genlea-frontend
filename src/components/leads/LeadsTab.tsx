@@ -92,7 +92,7 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
       )}
 
       {/* Last refresh indicator */}
-      <div className="px-5 pb-2 text-[10px] text-gray-400">{lastRefresh}</div>
+      <div className="px-1 pb-2 text-[10px] text-slate-400">{lastRefresh}</div>
     </>
   );
 }

@@ -1,14 +1,30 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg: #f3f5ef;
+  --ink: #172033;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(15, 109, 99, 0.10), transparent 32%),
+    radial-gradient(circle at top right, rgba(212, 158, 55, 0.10), transparent 26%),
+    var(--app-bg);
+}
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(15, 109, 99, 0.10), transparent 32%),
+    radial-gradient(circle at top right, rgba(212, 158, 55, 0.10), transparent 26%),
+    var(--app-bg);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
