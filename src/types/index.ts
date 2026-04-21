@@ -6,6 +6,7 @@ export type FundingStage = 'Pre-seed' | 'Seed' | 'Series A' | 'Series B' | 'Seri
 export type ScraperSource = 'linkedin' | 'sales_navigator' | 'crunchbase' | 'zoominfo' | 'apollo' | 'hunter' | 'github' | 'glassdoor' | 'wellfound' | 'clearbit' | 'explorium' | 'indeed' | 'surelyremote' | 'website' | 'agent';
 export type ContactRole = 'CEO' | 'Founder' | 'Co-Founder' | 'CTO' | 'COO' | 'CPO' | 'CFO' | 'VP of Engineering' | 'VP Engineering' | 'VP of Product' | 'VP of Technology' | 'Head of Engineering' | 'Director of Engineering' | 'Head of Product' | 'Director of Product' | 'Head of Technology' | 'Director of Technology' | 'Engineering Manager' | 'HR' | 'Head of HR' | 'VP of HR' | 'Head of People' | 'Recruiter' | 'Head of Talent' | 'Talent Acquisition' | 'Unknown';
 export type ScrapeJobStatus = 'queued' | 'processing' | 'success' | 'failed' | 'partial' | 'skipped';
+export type FailureMode = 'success' | 'captcha' | 'blocked' | 'empty' | 'network_error' | 'selector_mismatch' | 'timeout' | 'unknown';
 export type SortDir = 'asc' | 'desc';
 
 export interface ScoreBreakdown {
@@ -43,6 +44,7 @@ export interface Company {
   sources: ScraperSource[];
   score: number;
   scoreBreakdown?: ScoreBreakdown;
+  disqualificationReason?: string;
   status: LeadStatus;
   pipelineStatus: PipelineStatus;
   manuallyReviewed: boolean;
@@ -94,6 +96,24 @@ export interface AgentStep {
   latencyMs?: number;
 }
 
+export interface ScrapeStageRecord {
+  name: string;
+  durationMs: number;
+  ok: boolean;
+  detail?: string;
+}
+
+export interface ScrapeDiagnosticsSummary {
+  scraper: string;
+  runId: string;
+  url: string;
+  outcome: FailureMode;
+  totalMs: number;
+  itemsFound: number;
+  stages: ScrapeStageRecord[];
+  artifactBase?: string;
+}
+
 export interface ScrapeLog {
   _id: string;
   runId: string;
@@ -107,6 +127,7 @@ export interface ScrapeLog {
   startedAt: string;
   completedAt?: string;
   agentSteps?: AgentStep[];
+  diagnostics?: ScrapeDiagnosticsSummary;
 }
 
 // ─── API Response wrappers ────────────────────────────────────────────────────

@@ -4,13 +4,14 @@ import Badge from '../ui/Badge';
 import ApiOffline from '../ui/ApiOffline';
 import LogsSkeleton from '../ui/skeletons/LogsSkeleton';
 import { Skeleton, SkeletonBadge, SkeletonText } from '../ui/Skeleton';
-import type { ScrapeLog, AgentStep } from '../../types';
+import type { ScrapeLog, AgentStep, FailureMode, ScrapeStageRecord } from '../../types';
 
 function LogRowSkeleton() {
   return (
     <tr className="border-b border-gray-100">
       <td className="px-4 py-2"><SkeletonText w="w-32" h="h-3" /></td>
       <td className="px-4 py-2"><SkeletonText w="w-20" h="h-3" /></td>
+      <td className="px-4 py-2"><SkeletonBadge /></td>
       <td className="px-4 py-2"><SkeletonBadge /></td>
       <td className="px-4 py-2"><SkeletonText w="w-6" h="h-3" /></td>
       <td className="px-4 py-2"><SkeletonText w="w-6" h="h-3" /></td>
@@ -73,10 +74,62 @@ function AgentStepsPanel({ steps }: { steps: AgentStep[] }) {
   );
 }
 
+function DiagnosticsPanel({ stages, artifactBase }: { stages: ScrapeStageRecord[]; artifactBase?: string }) {
+  return (
+    <div className="px-3 py-2 space-y-2">
+      {stages.length > 0 && (
+        <div className="space-y-1">
+          {stages.map((stage, i) => (
+            <div key={`${stage.name}-${i}`} className="flex items-start gap-2 text-[11px]">
+              <span className={`mt-0.5 h-2 w-2 rounded-full ${stage.ok ? 'bg-emerald-400' : 'bg-red-400'}`} />
+              <span className="w-28 shrink-0 font-mono text-gray-700">{stage.name}</span>
+              <span className="text-gray-500">{stage.durationMs}ms</span>
+              <span className="min-w-0 flex-1 text-gray-500">{stage.detail ?? (stage.ok ? 'ok' : 'failed')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {artifactBase && (
+        <div className="text-[11px] text-amber-700">Artifacts captured: {artifactBase}</div>
+      )}
+    </div>
+  );
+}
+
+function outcomeLabel(outcome?: FailureMode): string {
+  switch (outcome) {
+    case 'captcha': return 'CAPTCHA';
+    case 'blocked': return 'Blocked';
+    case 'selector_mismatch': return 'Selector mismatch';
+    case 'network_error': return 'Network error';
+    case 'timeout': return 'Timeout';
+    case 'empty': return 'No results';
+    case 'success': return 'Healthy';
+    default: return 'Unknown';
+  }
+}
+
+function outcomeTone(outcome?: FailureMode): string {
+  switch (outcome) {
+    case 'success': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'empty': return 'bg-slate-50 text-slate-700 border-slate-200';
+    case 'captcha':
+    case 'blocked':
+    case 'network_error':
+    case 'timeout':
+    case 'selector_mismatch':
+      return 'bg-amber-50 text-amber-800 border-amber-200';
+    default:
+      return 'bg-gray-50 text-gray-600 border-gray-200';
+  }
+}
+
 // ─── Log Row ──────────────────────────────────────────────────────────────────
 function LogRow({ log, onShowErrors }: { log: ScrapeLog; onShowErrors: (errors: string[]) => void }) {
   const [expanded, setExpanded] = useState(false);
   const hasSteps = log.scraper === 'agent' && (log.agentSteps?.length ?? 0) > 0;
+  const hasDiagnostics = (log.diagnostics?.stages?.length ?? 0) > 0 || !!log.diagnostics?.artifactBase;
+  const canExpand = hasSteps || hasDiagnostics;
 
   const dur = log.durationMs
     ? log.durationMs < 1000 ? `${log.durationMs}ms` : `${(log.durationMs / 1000).toFixed(1)}s`
@@ -88,6 +141,16 @@ function LogRow({ log, onShowErrors }: { log: ScrapeLog; onShowErrors: (errors: 
         <td className="px-4 py-2 text-gray-500">{new Date(log.startedAt).toLocaleString()}</td>
         <td className="px-4 py-2 font-medium text-gray-800">{log.scraper}</td>
         <td className="px-4 py-2"><Badge status={log.status} /></td>
+        <td className="px-4 py-2">
+          {log.diagnostics ? (
+            <div className="flex flex-col gap-1">
+              <span className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-semibold ${outcomeTone(log.diagnostics.outcome)}`}>
+                {outcomeLabel(log.diagnostics.outcome)}
+              </span>
+              <span className="text-[10px] text-gray-400">{log.diagnostics.itemsFound} items</span>
+            </div>
+          ) : <span className="text-gray-300 text-[10px]">—</span>}
+        </td>
         <td className="px-4 py-2 text-gray-600">{log.companiesFound}</td>
         <td className="px-4 py-2 text-gray-600">{log.contactsFound}</td>
         <td className="px-4 py-2 text-gray-500">{dur}</td>
@@ -102,21 +165,22 @@ function LogRow({ log, onShowErrors }: { log: ScrapeLog; onShowErrors: (errors: 
           ) : <span className="text-gray-300 text-[10px]">—</span>}
         </td>
         <td className="px-4 py-2">
-          {hasSteps ? (
+          {canExpand ? (
             <button
               onClick={() => setExpanded(v => !v)}
               className="text-blue-500 hover:text-blue-700 text-[10px] flex items-center gap-1"
             >
               <span>{expanded ? '▼' : '▶'}</span>
-              <span>{log.agentSteps!.length} steps</span>
+              <span>{hasSteps ? `${log.agentSteps!.length} steps` : 'details'}</span>
             </button>
           ) : <span className="text-gray-300 text-[10px]">—</span>}
         </td>
       </tr>
-      {expanded && hasSteps && (
+      {expanded && canExpand && (
         <tr className="bg-gray-50 border-b border-gray-100">
-          <td colSpan={8} className="px-0 py-0">
-            <AgentStepsPanel steps={log.agentSteps!} />
+          <td colSpan={9} className="px-0 py-0">
+            {hasDiagnostics && <DiagnosticsPanel stages={log.diagnostics?.stages ?? []} artifactBase={log.diagnostics?.artifactBase} />}
+            {hasSteps && <AgentStepsPanel steps={log.agentSteps!} />}
           </td>
         </tr>
       )}
@@ -156,7 +220,7 @@ export default function LogsTab() {
         <table className="w-full text-xs">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Started','Scraper','Status','Companies','Contacts','Duration','Errors','Steps'].map(h => (
+              {['Started','Scraper','Status','Diagnosis','Companies','Contacts','Duration','Errors','Details'].map(h => (
                 <th key={h} className="text-left px-4 py-2.5 text-gray-500 uppercase tracking-wide text-[11px]">{h}</th>
               ))}
             </tr>
@@ -164,10 +228,10 @@ export default function LogsTab() {
           <tbody>
             {loading && Array.from({ length: 10 }).map((_, i) => <LogRowSkeleton key={i} />)}
             {error && !loading && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-red-400">{error}</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-red-400">{error}</td></tr>
             )}
             {!loading && !error && logs.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">No logs yet</td></tr>
+              <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">No logs yet</td></tr>
             )}
             {!loading && logs.map(log => (
               <LogRow key={log._id} log={log} onShowErrors={setPopoverErrors} />

@@ -182,7 +182,14 @@ export default function LeadsTable({
                   <td className="px-4 py-2.5">
                     {livePhase
                       ? <><Badge status={c.status} className="opacity-50 mr-1" /><Badge status={livePhase} /></>
-                      : <Badge status={c.status} />
+                      : (
+                        <div className="flex max-w-[220px] flex-col gap-1">
+                          <Badge status={c.status} />
+                          {c.status === 'disqualified' && c.disqualificationReason && (
+                            <span className="text-[10px] leading-snug text-slate-400">{c.disqualificationReason}</span>
+                          )}
+                        </div>
+                      )
                     }
                   </td>
                   <td className="px-4 py-2.5">

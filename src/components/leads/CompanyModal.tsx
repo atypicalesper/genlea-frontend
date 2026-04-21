@@ -90,6 +90,13 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
                 )}
               </div>
 
+              {c.status === 'disqualified' && c.disqualificationReason && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+                  <span className="font-semibold text-gray-800">Disqualification reason:</span>{' '}
+                  {c.disqualificationReason}
+                </div>
+              )}
+
               {/* Score breakdown */}
               {c.scoreBreakdown && (
                 <div className="bg-gray-50 rounded-lg p-3 grid grid-cols-3 gap-2 text-xs">
