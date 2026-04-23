@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLeads, DEFAULT_FILTERS } from '../../hooks/useLeads';
-import { patchCompanyStatus } from '../../api/endpoints';
+import { patchCompanyName, patchCompanyStatus } from '../../api/endpoints';
 import { getExportUrl } from '../../api/endpoints';
 import StatsBar from '../layout/StatsBar';
 import LeadsFilters from './LeadsFilters';
@@ -59,6 +59,20 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
 
+  const handleRename = async (id: string) => {
+    const company = companies.find(c => c._id === id);
+    if (!company) return;
+
+    const nextName = prompt('Edit lead title', company.name)?.trim();
+    if (!nextName || nextName === company.name) return;
+
+    try {
+      await patchCompanyName(id, nextName);
+      toast('Lead title updated');
+      refresh();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
   const handleExport = () => window.open(getExportUrl(), '_blank');
 
   return (
@@ -91,9 +105,10 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
         onOpenCompany={id => setModalId(id)}
         onStatusChange={handleStatusChange}
         onDisqualify={handleDisqualify}
+        onRename={handleRename}
       />
 
-      <CompanyModal companyId={modalId} onClose={() => setModalId(null)} />
+      <CompanyModal companyId={modalId} onClose={() => setModalId(null)} onUpdated={refresh} />
 
       {statusTarget && (
         <StatusChangeModal

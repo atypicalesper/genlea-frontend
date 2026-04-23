@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchCompany, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
+import { fetchCompany, patchCompanyName, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
 import type { CompanyDetail, Contact } from '../../types';
 import Badge from '../ui/Badge';
 import ModalSkeleton from '../ui/skeletons/ModalSkeleton';
@@ -9,9 +9,10 @@ import { useToast } from '../ui/Toast';
 interface CompanyModalProps {
   companyId: string | null;
   onClose: () => void;
+  onUpdated?: () => void;
 }
 
-export default function CompanyModal({ companyId, onClose }: CompanyModalProps) {
+export default function CompanyModal({ companyId, onClose, onUpdated }: CompanyModalProps) {
   const [detail, setDetail] = useState<CompanyDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +54,20 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
 
+  const handleRename = async () => {
+    if (!c) return;
+
+    const nextName = prompt('Edit lead title', c.name)?.trim();
+    if (!nextName || nextName === c.name) return;
+
+    try {
+      const res = await patchCompanyName(c._id, nextName);
+      setDetail(prev => prev ? { ...prev, company: res.data } : prev);
+      toast('Lead title updated');
+      onUpdated?.();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
   const c = detail?.company;
   const sortedContacts = detail?.contacts ?? [];
 
@@ -66,6 +81,7 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="font-semibold text-gray-900 text-base">{c?.name ?? 'Loading…'}</h2>
           <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleRename} className="text-slate-600">Edit title</Button>
             <Button variant="secondary" onClick={handleReEnrich} className="text-indigo-600">↺ Re-enrich</Button>
             <Button variant="secondary" onClick={handleReScore} className="text-amber-600">⚡ Re-score</Button>
             <Button variant="secondary" onClick={handleDelete} className="text-red-500">✕ Delete</Button>

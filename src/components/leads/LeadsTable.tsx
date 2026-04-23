@@ -61,6 +61,7 @@ interface LeadsTableProps {
   onOpenCompany: (id: string) => void;
   onStatusChange: (id: string) => void;
   onDisqualify: (id: string) => void;
+  onRename: (id: string) => void;
 }
 
 const SORT_COLS = ['name','score','originRatio','fundingStage','employeeCount'];
@@ -123,7 +124,7 @@ function SortTh({ col, label, current, dir, onSort }: SortThProps) {
 export default function LeadsTable({
   companies, contacts, activeJobs, loading, error,
   filters, totalPages, totalCount,
-  onSort, onPageChange, onOpenCompany, onStatusChange, onDisqualify,
+  onSort, onPageChange, onOpenCompany, onStatusChange, onDisqualify, onRename,
 }: LeadsTableProps) {
   const activeJobMap = new Map(
     activeJobs
@@ -253,6 +254,11 @@ export default function LeadsTable({
                         className="px-2 py-1 border border-slate-200 rounded-xl text-[10px] hover:bg-slate-50"
                         title="Change status"
                       >✎</button>
+                      <button
+                        onClick={() => onRename(c._id)}
+                        className="px-2 py-1 border border-slate-200 rounded-xl text-[10px] hover:bg-slate-50"
+                        title="Edit lead title"
+                      >T</button>
                       {c.status !== 'disqualified' && (
                         <button
                           onClick={() => onDisqualify(c._id)}
