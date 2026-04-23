@@ -208,6 +208,7 @@ export interface Settings {
   workerConcurrencyDiscovery: number;
   workerConcurrencyEnrichment: number;
   workerConcurrencyScoring: number;
+  maxConcurrentBrowsers: number;
 }
 
 export interface CompanyDetail {

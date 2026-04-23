@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchCompany, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
-import type { CompanyDetail } from '../../types';
+import type { CompanyDetail, Contact } from '../../types';
 import Badge from '../ui/Badge';
 import ModalSkeleton from '../ui/skeletons/ModalSkeleton';
 import Button from '../ui/Button';
@@ -96,6 +96,8 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
                   {c.disqualificationReason}
                 </div>
               )}
+
+              <IcpFitPanel detail={detail} />
 
               {/* Score breakdown */}
               {c.scoreBreakdown && (
@@ -199,6 +201,169 @@ export default function CompanyModal({ companyId, onClose }: CompanyModalProps) 
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+type SignalState = 'pass' | 'warn' | 'fail';
+
+interface IcpSignal {
+  label: string;
+  state: SignalState;
+  value: string;
+  detail: string;
+}
+
+const SIGNAL_STYLE: Record<SignalState, string> = {
+  pass: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  warn: 'border-amber-200 bg-amber-50 text-amber-800',
+  fail: 'border-rose-200 bg-rose-50 text-rose-800',
+};
+
+const SIGNAL_LABEL: Record<SignalState, string> = {
+  pass: 'Good',
+  warn: 'Needs evidence',
+  fail: 'Blocker',
+};
+
+const HIRING_SOURCES = new Set(['linkedin', 'wellfound', 'indeed', 'glassdoor', 'surelyremote', 'greenhouse', 'lever', 'ashby', 'workable']);
+const DECISION_ROLE_RE = /(founder|ceo|cto|vp of engineering|vp engineering|head of engineering|director of engineering|head of technology|director of technology|head of talent|talent acquisition|recruiter|head of people)/i;
+
+function normalizedCountry(country?: string) {
+  return (country ?? '').trim().toLowerCase();
+}
+
+function isIndiaHq(country?: string) {
+  const value = normalizedCountry(country);
+  return value === 'in' || value === 'india' || value.includes('india');
+}
+
+function isKnownCountry(country?: string) {
+  const value = normalizedCountry(country);
+  return Boolean(value && value !== 'unknown' && value !== 'unresolved');
+}
+
+function hasDecisionMakerEmail(contacts: Contact[]) {
+  return contacts.some(contact => DECISION_ROLE_RE.test(contact.role) && Boolean(contact.email));
+}
+
+function hasDecisionMaker(contacts: Contact[]) {
+  return contacts.some(contact => DECISION_ROLE_RE.test(contact.role));
+}
+
+function buildIcpSignals(detail: CompanyDetail) {
+  const company = detail.company;
+  const activeJobs = detail.jobs.active ?? [];
+  const hiringSourceFound = company.sources.some(source => HIRING_SOURCES.has(source));
+  const hasHiringSignal = activeJobs.length > 0 || company.openRoles.length > 0 || hiringSourceFound;
+  const hasOriginSignal = (company.originRatio ?? 0) > 0 || (company.originDevCount ?? 0) > 0;
+  const hasFundingSignal = Boolean(company.fundingStage && company.fundingStage !== 'Unknown') || Boolean(company.fundingTotalUsd) || Boolean(company.foundedYear);
+  const hqLabel = [company.hqCity, company.hqState, company.hqCountry].filter(Boolean).join(', ');
+
+  const marketState: SignalState = isIndiaHq(company.hqCountry) ? 'fail' : isKnownCountry(company.hqCountry) ? 'pass' : 'warn';
+  const sizeState: SignalState = company.employeeCount == null ? 'warn' : company.employeeCount <= 1000 ? 'pass' : 'fail';
+  const hiringState: SignalState = hasHiringSignal ? 'pass' : 'fail';
+  const originState: SignalState = hasOriginSignal ? 'pass' : 'fail';
+  const contactState: SignalState = hasDecisionMakerEmail(detail.contacts) ? 'pass' : hasDecisionMaker(detail.contacts) ? 'warn' : 'fail';
+  const fundingState: SignalState = hasFundingSignal ? 'pass' : 'warn';
+
+  const signals: IcpSignal[] = [
+    {
+      label: 'Market',
+      state: marketState,
+      value: hqLabel || 'HQ unknown',
+      detail: marketState === 'pass' ? 'Non-India market for stronger services budgets.' : marketState === 'fail' ? 'India-headquartered companies are outside this ICP.' : 'Verify HQ before outreach.',
+    },
+    {
+      label: 'Size',
+      state: sizeState,
+      value: company.employeeCount == null ? 'Unknown' : `${company.employeeCount} employees`,
+      detail: sizeState === 'pass' ? 'Small enough to be startup-like.' : sizeState === 'fail' ? 'Likely too enterprise/MNC-like for this pitch.' : 'Needs employee-count enrichment.',
+    },
+    {
+      label: 'Engineering hiring',
+      state: hiringState,
+      value: activeJobs.length > 0 ? `${activeJobs.length} active role${activeJobs.length === 1 ? '' : 's'}` : company.openRoles.length > 0 ? `${company.openRoles.length} scraped role${company.openRoles.length === 1 ? '' : 's'}` : 'No signal',
+      detail: hiringState === 'pass' ? 'There is current hiring evidence to anchor outreach.' : 'Run hiring-source enrichment before pitching.',
+    },
+    {
+      label: 'India-team signal',
+      state: originState,
+      value: company.originRatio != null ? `${Math.round(company.originRatio * 100)}% origin match` : `${company.originDevCount ?? 0} matched people`,
+      detail: originState === 'pass' ? 'Evidence suggests comfort hiring Indian-origin talent.' : 'Collect engineering/team names before calling this pitchable.',
+    },
+    {
+      label: 'Funding or growth',
+      state: fundingState,
+      value: company.fundingStage && company.fundingStage !== 'Unknown' ? company.fundingStage : company.foundedYear ? `Founded ${company.foundedYear}` : 'Unknown',
+      detail: fundingState === 'pass' ? 'Some growth/funding context exists.' : 'Useful signal is missing, but not a hard blocker.',
+    },
+    {
+      label: 'Decision contacts',
+      state: contactState,
+      value: detail.contacts.length > 0 ? `${detail.contacts.length} contact${detail.contacts.length === 1 ? '' : 's'}` : 'None',
+      detail: contactState === 'pass' ? 'Decision-maker email exists for outreach.' : contactState === 'warn' ? 'Decision-maker found, but email is missing or unverified.' : 'Run Hunter/contact enrichment before outreach.',
+    },
+  ];
+
+  const hardBlockers = signals.filter(signal => ['Market', 'Size', 'Engineering hiring', 'India-team signal'].includes(signal.label) && signal.state === 'fail');
+  const warnings = signals.filter(signal => signal.state === 'warn');
+  const readiness = company.status === 'disqualified' || hardBlockers.length > 0
+    ? 'Not pitch-ready'
+    : warnings.length > 0
+      ? 'Needs verification'
+      : 'Ready to pitch';
+  const readinessStyle = readiness === 'Ready to pitch'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+    : readiness === 'Needs verification'
+      ? 'border-amber-200 bg-amber-50 text-amber-800'
+      : 'border-slate-200 bg-slate-50 text-slate-600';
+  const nextActions = signals
+    .filter(signal => signal.state !== 'pass')
+    .slice(0, 3)
+    .map(signal => signal.detail);
+
+  return { signals, readiness, readinessStyle, nextActions };
+}
+
+function IcpFitPanel({ detail }: { detail: CompanyDetail }) {
+  const { signals, readiness, readinessStyle, nextActions } = buildIcpSignals(detail);
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outbound ICP</h3>
+          <p className="text-[11px] text-slate-400">Pitchability check for funded, non-India, startup-like engineering buyers.</p>
+        </div>
+        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${readinessStyle}`}>{readiness}</span>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {signals.map(signal => (
+          <div key={signal.label} className="rounded-xl border border-white bg-white px-3 py-2 shadow-sm shadow-slate-900/5">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold text-slate-700">{signal.label}</span>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${SIGNAL_STYLE[signal.state]}`}>
+                {SIGNAL_LABEL[signal.state]}
+              </span>
+            </div>
+            <div className="text-xs font-medium text-slate-900">{signal.value}</div>
+            <div className="mt-1 text-[10px] leading-snug text-slate-400">{signal.detail}</div>
+          </div>
+        ))}
+      </div>
+
+      {nextActions.length > 0 && (
+        <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-white/70 px-3 py-2">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Next best checks</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {nextActions.map(action => (
+              <span key={action} className="rounded-full bg-slate-100 px-2 py-1 text-[10px] text-slate-500">{action}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

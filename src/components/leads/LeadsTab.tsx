@@ -47,6 +47,18 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
 
+  const handleDisqualify = async (id: string) => {
+    const company = companies.find(c => c._id === id);
+    if (!company) return;
+    if (!confirm(`Disqualify "${company.name}"? You can restore it later with the status picker.`)) return;
+
+    try {
+      await patchCompanyStatus(id, 'disqualified');
+      toast('Lead disqualified: ' + company.name);
+      refresh();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
   const handleExport = () => window.open(getExportUrl(), '_blank');
 
   return (
@@ -78,6 +90,7 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
         onPageChange={delta => setFilters({ page: filters.page + delta })}
         onOpenCompany={id => setModalId(id)}
         onStatusChange={handleStatusChange}
+        onDisqualify={handleDisqualify}
       />
 
       <CompanyModal companyId={modalId} onClose={() => setModalId(null)} />

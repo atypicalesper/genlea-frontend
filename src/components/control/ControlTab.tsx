@@ -204,6 +204,23 @@ function SettingsPanel({
             />
           </div>
         </div>
+
+        <div className="col-span-full border-t border-gray-100 pt-4">
+          <div className="text-gray-400 uppercase tracking-wide text-[10px] mb-2">
+            Browser Pool
+            <span className="normal-case ml-1 font-normal">— shared Playwright browser limit</span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            <SliderField
+              label="Max Concurrent Browsers"
+              description="↓ Lower → safer memory usage and fewer anti-bot issues. ↑ Higher → more browser-based scrapers can run at once, but each browser is heavy. Raise this only if RAM is available and browser-heavy discovery sources are queueing."
+              value={local.maxConcurrentBrowsers}
+              min={1} max={10} step={1}
+              display={v => String(v)}
+              onChange={v => update('maxConcurrentBrowsers', v)}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
