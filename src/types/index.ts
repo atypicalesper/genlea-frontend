@@ -44,6 +44,7 @@ export interface Company {
   sources: ScraperSource[];
   score: number;
   scoreBreakdown?: ScoreBreakdown;
+  notes?: string;
   disqualificationReason?: string;
   status: LeadStatus;
   pipelineStatus: PipelineStatus;
@@ -235,6 +236,7 @@ export interface LeadFilters {
   techStack: string;
   fundingStage: string;
   source: string;
+  outreachReady: 'all' | 'ready';
   limit: number;
   page: number;
   sortBy: string;

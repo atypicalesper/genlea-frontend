@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchCompany, patchCompanyName, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
+import { fetchCompany, patchCompanyName, patchCompanyNotes, postReEnrich, postReScore, deleteCompany } from '../../api/endpoints';
 import type { CompanyDetail, Contact } from '../../types';
 import Badge from '../ui/Badge';
 import ModalSkeleton from '../ui/skeletons/ModalSkeleton';
@@ -16,6 +16,7 @@ export default function CompanyModal({ companyId, onClose, onUpdated }: CompanyM
   const [detail, setDetail] = useState<CompanyDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notesDraft, setNotesDraft] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,8 +24,12 @@ export default function CompanyModal({ companyId, onClose, onUpdated }: CompanyM
     setDetail(null);
     setError(null);
     setLoading(true);
+    setNotesDraft('');
     fetchCompany(companyId)
-      .then(res => setDetail(res.data))
+      .then(res => {
+        setDetail(res.data);
+        setNotesDraft(res.data.company.notes ?? '');
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [companyId]);
@@ -64,6 +69,17 @@ export default function CompanyModal({ companyId, onClose, onUpdated }: CompanyM
       const res = await patchCompanyName(c._id, nextName);
       setDetail(prev => prev ? { ...prev, company: res.data } : prev);
       toast('Lead title updated');
+      onUpdated?.();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!c) return;
+
+    try {
+      const res = await patchCompanyNotes(c._id, notesDraft);
+      setDetail(prev => prev ? { ...prev, company: res.data } : prev);
+      toast('Reviewer notes saved');
       onUpdated?.();
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
@@ -136,6 +152,24 @@ export default function CompanyModal({ companyId, onClose, onUpdated }: CompanyM
                 {c.foundedYear && <Info label="Founded">{c.foundedYear}</Info>}
                 {c.industry?.length > 0 && <Info label="Industry">{c.industry.join(', ')}</Info>}
               </div>
+
+              <Section title="Reviewer Notes">
+                <div className="space-y-2">
+                  <textarea
+                    value={notesDraft}
+                    onChange={e => setNotesDraft(e.target.value)}
+                    rows={4}
+                    placeholder="Leave manual notes about fit, outreach angle, blockers, or next steps…"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-300"
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400">These notes stay with the lead and are not scraper-generated.</span>
+                    <Button variant="secondary" onClick={handleSaveNotes} className="text-slate-600" disabled={notesDraft === (c.notes ?? '')}>
+                      Save notes
+                    </Button>
+                  </div>
+                </div>
+              </Section>
 
               {c.description && (
                 <p className="text-xs text-gray-500 leading-relaxed">{c.description}</p>

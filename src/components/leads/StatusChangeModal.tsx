@@ -15,7 +15,7 @@ const STATUS_META: Record<LeadStatus, { label: string; style: string }> = {
 interface StatusChangeModalProps {
   companyName: string;
   currentStatus: LeadStatus;
-  onConfirm: (status: LeadStatus) => void;
+  onConfirm: (status: LeadStatus, reason?: string) => void;
   onClose: () => void;
 }
 
@@ -23,6 +23,7 @@ export default function StatusChangeModal({
   companyName, currentStatus, onConfirm, onClose,
 }: StatusChangeModalProps) {
   const [selected, setSelected] = useState<LeadStatus>(currentStatus);
+  const [reason, setReason] = useState('');
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   // Focus confirm button on open
@@ -72,6 +73,21 @@ export default function StatusChangeModal({
           })}
         </div>
 
+        {selected === 'disqualified' && (
+          <div className="mb-5">
+            <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-gray-500">
+              Disqualification reason
+            </label>
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              rows={3}
+              placeholder="Why should this lead be removed from outreach?"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-blue-300"
+            />
+          </div>
+        )}
+
         <div className="flex gap-2 justify-end">
           <button
             onClick={onClose}
@@ -81,8 +97,8 @@ export default function StatusChangeModal({
           </button>
           <button
             ref={confirmRef}
-            onClick={() => onConfirm(selected)}
-            disabled={selected === currentStatus}
+            onClick={() => onConfirm(selected, reason.trim() || undefined)}
+            disabled={selected === currentStatus && !(selected === 'disqualified' && reason.trim())}
             className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Update

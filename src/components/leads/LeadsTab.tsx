@@ -36,12 +36,12 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
     if (company) setStatusTarget(company);
   };
 
-  const handleStatusConfirm = async (next: LeadStatus) => {
+  const handleStatusConfirm = async (next: LeadStatus, reason?: string) => {
     if (!statusTarget) return;
     const { _id, name } = statusTarget;
     setStatusTarget(null);
     try {
-      await patchCompanyStatus(_id, next);
+      await patchCompanyStatus(_id, next, reason);
       toast('Status updated to ' + next + ' for ' + name);
       refresh();
     } catch (e) { toast('Failed: ' + (e as Error).message); }
@@ -50,11 +50,24 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
   const handleDisqualify = async (id: string) => {
     const company = companies.find(c => c._id === id);
     if (!company) return;
-    if (!confirm(`Disqualify "${company.name}"? You can restore it later with the status picker.`)) return;
+    const reason = prompt(`Disqualify "${company.name}"?\n\nWhy is this not a fit?`, company.disqualificationReason ?? '')?.trim();
+    if (reason == null) return;
 
     try {
-      await patchCompanyStatus(id, 'disqualified');
+      await patchCompanyStatus(id, 'disqualified', reason || 'Manually disqualified');
       toast('Lead disqualified: ' + company.name);
+      refresh();
+    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  };
+
+  const handleRestore = async (id: string) => {
+    const company = companies.find(c => c._id === id);
+    if (!company) return;
+    if (!confirm(`Restore "${company.name}" back into the review pipeline?`)) return;
+
+    try {
+      await patchCompanyStatus(id, 'pending');
+      toast('Lead restored: ' + company.name);
       refresh();
     } catch (e) { toast('Failed: ' + (e as Error).message); }
   };
@@ -105,6 +118,7 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
         onOpenCompany={id => setModalId(id)}
         onStatusChange={handleStatusChange}
         onDisqualify={handleDisqualify}
+        onRestore={handleRestore}
         onRename={handleRename}
       />
 

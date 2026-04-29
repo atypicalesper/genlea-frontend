@@ -7,7 +7,7 @@ import type { Company, Contact, Stats, ActiveJob, LeadFilters } from '../types';
 
 export const DEFAULT_FILTERS: LeadFilters = {
   search: '', status: '', minScore: '', maxScore: '',
-  techStack: '', fundingStage: '', source: '',
+  techStack: '', fundingStage: '', source: '', outreachReady: 'all',
   limit: 50, page: 1, sortBy: 'score', sortDir: 'desc',
   segment: 'all',
 };

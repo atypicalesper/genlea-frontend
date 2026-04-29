@@ -9,6 +9,7 @@ function SkeletonRow() {
       <td className="px-4 py-2.5 max-w-45">
         <SkeletonText w="w-28" h="h-3.5" />
         <SkeletonText w="w-20" h="h-2.5" />
+        <SkeletonText w="w-32" h="h-2.5" />
         <div className="flex gap-0.75 mt-1">
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="w-1.5 h-1.5 rounded-full" />)}
         </div>
@@ -61,6 +62,7 @@ interface LeadsTableProps {
   onOpenCompany: (id: string) => void;
   onStatusChange: (id: string) => void;
   onDisqualify: (id: string) => void;
+  onRestore: (id: string) => void;
   onRename: (id: string) => void;
 }
 
@@ -124,7 +126,7 @@ function SortTh({ col, label, current, dir, onSort }: SortThProps) {
 export default function LeadsTable({
   companies, contacts, activeJobs, loading, error,
   filters, totalPages, totalCount,
-  onSort, onPageChange, onOpenCompany, onStatusChange, onDisqualify, onRename,
+  onSort, onPageChange, onOpenCompany, onStatusChange, onDisqualify, onRestore, onRename,
 }: LeadsTableProps) {
   const activeJobMap = new Map(
     activeJobs
@@ -191,6 +193,11 @@ export default function LeadsTable({
                       <span className="truncate text-[10px] text-slate-400">{formatHq(c)}</span>
                       <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${readiness.className}`}>{readiness.label}</span>
                     </div>
+                    {c.notes && (
+                      <div className="mt-1 max-w-[220px] truncate text-[10px] italic text-slate-400" title={c.notes}>
+                        Note: {c.notes}
+                      </div>
+                    )}
                     {c.pipelineStatus && (
                       <PipelineDots status={c.pipelineStatus} live={!!livePhase} />
                     )}
@@ -265,6 +272,13 @@ export default function LeadsTable({
                           className="px-2 py-1 border border-rose-100 rounded-xl text-[10px] text-rose-500 hover:bg-rose-50"
                           title="Disqualify lead"
                         >✕</button>
+                      )}
+                      {c.status === 'disqualified' && (
+                        <button
+                          onClick={() => onRestore(c._id)}
+                          className="px-2 py-1 border border-emerald-100 rounded-xl text-[10px] text-emerald-600 hover:bg-emerald-50"
+                          title="Restore lead"
+                        >↺</button>
                       )}
                       <button
                         onClick={() => onOpenCompany(c._id)}

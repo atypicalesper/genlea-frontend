@@ -86,6 +86,14 @@ export default function LeadsFilters({ filters, onFiltersChange, onApply, onRese
         </select>
       </Field>
 
+      <Field label="Outreach">
+        <select value={filters.outreachReady} onChange={e => onFiltersChange({ outreachReady: e.target.value as LeadFilters['outreachReady'] })}
+          className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-300">
+          <option value="all">Any</option>
+          <option value="ready">Ready to pitch</option>
+        </select>
+      </Field>
+
       <Field label="Per page">
         <select value={filters.limit} onChange={e => onFiltersChange({ limit: Number(e.target.value) })}
           className="border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-300">

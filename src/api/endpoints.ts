@@ -28,6 +28,7 @@ export function buildLeadsParams(f: LeadFilters): URLSearchParams {
   if (f.fundingStage) p.set('fundingStage', f.fundingStage);
   if (f.source)       p.set('source', f.source);
   if (f.search)       p.set('search', f.search);
+  if (f.outreachReady === 'ready') p.set('outreachReady', 'true');
   return p;
 }
 
@@ -49,11 +50,14 @@ export const fetchContactsForCompanies = (ids: string[]) =>
 export const fetchCompany = (id: string) =>
   apiFetch<ApiResponse<CompanyDetail>>(`/api/companies/${id}`, undefined, 10_000);
 
-export const patchCompanyStatus = (id: string, status: LeadStatus) =>
-  apiPatch<ApiResponse<{ status: LeadStatus }>>(`/api/companies/${id}/status`, { status });
+export const patchCompanyStatus = (id: string, status: LeadStatus, reason?: string) =>
+  apiPatch<ApiResponse<{ status: LeadStatus }>>(`/api/companies/${id}/status`, { status, ...(reason ? { reason } : {}) });
 
 export const patchCompanyName = (id: string, name: string) =>
   apiPatch<ApiResponse<Company>>(`/api/companies/${id}`, { name });
+
+export const patchCompanyNotes = (id: string, notes: string) =>
+  apiPatch<ApiResponse<Company>>(`/api/companies/${id}`, { notes });
 
 export const deleteCompany = (id: string) =>
   apiDelete<ApiResponse<{ success: boolean }>>(`/api/companies/${id}`);
