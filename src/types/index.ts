@@ -1,13 +1,31 @@
-// ─── Mirrored from backend src/types/index.ts ────────────────────────────────
+// ─── API contract types — mirrored from backend ──────────────────────────────
+// See ../shared-api-types.ts (header note explains the mirror contract).
+export type {
+  LeadStatus, PipelineStatus, FundingStage, ScraperSource,
+  ContactRole, ScrapeJobStatus, FailureMode,
+  PatchCompanyBody, PatchCompanyStatusBody, ScrapeRequestBody,
+} from '../shared-api-types';
+import type {
+  ScraperSource, ContactRole, LeadStatus, PipelineStatus,
+  FundingStage, ScrapeJobStatus, FailureMode,
+} from '../shared-api-types';
 
-export type LeadStatus = 'hot_verified' | 'hot' | 'warm' | 'cold' | 'disqualified' | 'pending';
-export type PipelineStatus = 'discovered' | 'watchlist' | 'enriching' | 'enriched' | 'scoring' | 'scored';
-export type FundingStage = 'Pre-seed' | 'Seed' | 'Series A' | 'Series B' | 'Series C' | 'Series D+' | 'Bootstrapped' | 'Public' | 'Acquired' | 'Unknown';
-export type ScraperSource = 'linkedin' | 'sales_navigator' | 'crunchbase' | 'zoominfo' | 'apollo' | 'hunter' | 'github' | 'glassdoor' | 'wellfound' | 'clearbit' | 'explorium' | 'indeed' | 'surelyremote' | 'website' | 'agent';
-export type ContactRole = 'CEO' | 'Founder' | 'Co-Founder' | 'CTO' | 'COO' | 'CPO' | 'CFO' | 'VP of Engineering' | 'VP Engineering' | 'VP of Product' | 'VP of Technology' | 'Head of Engineering' | 'Director of Engineering' | 'Head of Product' | 'Director of Product' | 'Head of Technology' | 'Director of Technology' | 'Engineering Manager' | 'HR' | 'Head of HR' | 'VP of HR' | 'Head of People' | 'Recruiter' | 'Head of Talent' | 'Talent Acquisition' | 'Unknown';
-export type ScrapeJobStatus = 'queued' | 'processing' | 'success' | 'failed' | 'partial' | 'skipped';
-export type FailureMode = 'success' | 'captcha' | 'blocked' | 'empty' | 'network_error' | 'selector_mismatch' | 'timeout' | 'unknown';
+// ─── Frontend-only types ──────────────────────────────────────────────────────
 export type SortDir = 'asc' | 'desc';
+
+// ─── API Response wrappers (frontend-side) ───────────────────────────────────
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  meta: { total: number; page: number; limit: number; pages: number };
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  issues?: Array<{ path: string; message: string }>;
+}
 
 export interface ScoreBreakdown {
   originRatioScore: number;
@@ -129,20 +147,6 @@ export interface ScrapeLog {
   completedAt?: string;
   agentSteps?: AgentStep[];
   diagnostics?: ScrapeDiagnosticsSummary;
-}
-
-// ─── API Response wrappers ────────────────────────────────────────────────────
-
-export interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  meta: { total: number; page: number; limit: number; pages: number };
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
 }
 
 // ─── Dashboard-specific ───────────────────────────────────────────────────────

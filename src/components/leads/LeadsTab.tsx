@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useLeads, DEFAULT_FILTERS } from '../../hooks/useLeads';
-import { patchCompanyName, patchCompanyStatus } from '../../api/endpoints';
+import { useUpdateCompanyStatus, useRenameCompany } from '../../hooks/useCompanyMutations';
 import { getExportUrl } from '../../api/endpoints';
 import StatsBar from '../layout/StatsBar';
 import LeadsFilters from './LeadsFilters';
 import LeadsTable from './LeadsTable';
 import CompanyModal from './CompanyModal';
 import StatusChangeModal from './StatusChangeModal';
+import PromptModal from '../ui/PromptModal';
+import ConfirmModal from '../ui/ConfirmModal';
 import { useToast } from '../ui/Toast';
 import type { Company, LeadStatus } from '../../types';
 
@@ -20,9 +22,16 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
 
   // Register refresh so App.tsx header button can trigger it
   useEffect(() => { onRegisterRefresh?.(refresh); }, [refresh, onRegisterRefresh]);
+
   const [modalId, setModalId] = useState<string | null>(null);
   const [statusTarget, setStatusTarget] = useState<Company | null>(null);
+  const [disqualifyTarget, setDisqualifyTarget] = useState<Company | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<Company | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Company | null>(null);
   const { toast } = useToast();
+
+  const updateStatus = useUpdateCompanyStatus();
+  const renameCompany = useRenameCompany();
 
   const handleSort = (col: string) => {
     setFilters({
@@ -36,54 +45,72 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
     if (company) setStatusTarget(company);
   };
 
-  const handleStatusConfirm = async (next: LeadStatus, reason?: string) => {
+  const handleStatusConfirm = (next: LeadStatus, reason?: string) => {
     if (!statusTarget) return;
     const { _id, name } = statusTarget;
     setStatusTarget(null);
-    try {
-      await patchCompanyStatus(_id, next, reason);
-      toast('Status updated to ' + next + ' for ' + name);
-      refresh();
-    } catch (e) { toast('Failed: ' + (e as Error).message); }
+    updateStatus.mutate(
+      { id: _id, status: next, reason },
+      {
+        onSuccess: () => toast(`Status updated to ${next} for ${name}`),
+        onError:   e => toast(`Failed: ${(e as Error).message}`),
+      },
+    );
   };
 
-  const handleDisqualify = async (id: string) => {
+  const handleDisqualify = (id: string) => {
     const company = companies.find(c => c._id === id);
-    if (!company) return;
-    const reason = prompt(`Disqualify "${company.name}"?\n\nWhy is this not a fit?`, company.disqualificationReason ?? '')?.trim();
-    if (reason == null) return;
-
-    try {
-      await patchCompanyStatus(id, 'disqualified', reason || 'Manually disqualified');
-      toast('Lead disqualified: ' + company.name);
-      refresh();
-    } catch (e) { toast('Failed: ' + (e as Error).message); }
+    if (company) setDisqualifyTarget(company);
   };
 
-  const handleRestore = async (id: string) => {
-    const company = companies.find(c => c._id === id);
-    if (!company) return;
-    if (!confirm(`Restore "${company.name}" back into the review pipeline?`)) return;
-
-    try {
-      await patchCompanyStatus(id, 'pending');
-      toast('Lead restored: ' + company.name);
-      refresh();
-    } catch (e) { toast('Failed: ' + (e as Error).message); }
+  const handleDisqualifyConfirm = (reason: string) => {
+    if (!disqualifyTarget) return;
+    const company = disqualifyTarget;
+    setDisqualifyTarget(null);
+    updateStatus.mutate(
+      { id: company._id, status: 'disqualified', reason: reason || 'Manually disqualified' },
+      {
+        onSuccess: () => toast(`Lead disqualified: ${company.name}`),
+        onError:   e => toast(`Failed: ${(e as Error).message}`),
+      },
+    );
   };
 
-  const handleRename = async (id: string) => {
+  const handleRestore = (id: string) => {
     const company = companies.find(c => c._id === id);
-    if (!company) return;
+    if (company) setRestoreTarget(company);
+  };
 
-    const nextName = prompt('Edit lead title', company.name)?.trim();
+  const handleRestoreConfirm = () => {
+    if (!restoreTarget) return;
+    const company = restoreTarget;
+    setRestoreTarget(null);
+    updateStatus.mutate(
+      { id: company._id, status: 'pending' },
+      {
+        onSuccess: () => toast(`Lead restored: ${company.name}`),
+        onError:   e => toast(`Failed: ${(e as Error).message}`),
+      },
+    );
+  };
+
+  const handleRename = (id: string) => {
+    const company = companies.find(c => c._id === id);
+    if (company) setRenameTarget(company);
+  };
+
+  const handleRenameConfirm = (nextName: string) => {
+    if (!renameTarget) return;
+    const company = renameTarget;
+    setRenameTarget(null);
     if (!nextName || nextName === company.name) return;
-
-    try {
-      await patchCompanyName(id, nextName);
-      toast('Lead title updated');
-      refresh();
-    } catch (e) { toast('Failed: ' + (e as Error).message); }
+    renameCompany.mutate(
+      { id: company._id, name: nextName },
+      {
+        onSuccess: () => toast('Lead title updated'),
+        onError:   e => toast(`Failed: ${(e as Error).message}`),
+      },
+    );
   };
 
   const handleExport = () => window.open(getExportUrl(), '_blank');
@@ -132,6 +159,38 @@ export default function LeadsTab({ onRegisterRefresh }: LeadsTabProps) {
           onClose={() => setStatusTarget(null)}
         />
       )}
+
+      <PromptModal
+        open={!!disqualifyTarget}
+        title={disqualifyTarget ? `Disqualify "${disqualifyTarget.name}"?` : ''}
+        description="Why is this not a fit?"
+        initialValue={disqualifyTarget?.disqualificationReason ?? ''}
+        confirmLabel="Disqualify"
+        multiline
+        maxLength={500}
+        onConfirm={handleDisqualifyConfirm}
+        onClose={() => setDisqualifyTarget(null)}
+      />
+
+      <ConfirmModal
+        open={!!restoreTarget}
+        title={restoreTarget ? `Restore "${restoreTarget.name}"?` : ''}
+        description="This will move it back into the review pipeline."
+        confirmLabel="Restore"
+        onConfirm={handleRestoreConfirm}
+        onClose={() => setRestoreTarget(null)}
+      />
+
+      <PromptModal
+        open={!!renameTarget}
+        title="Edit lead title"
+        initialValue={renameTarget?.name ?? ''}
+        confirmLabel="Save"
+        required
+        maxLength={200}
+        onConfirm={handleRenameConfirm}
+        onClose={() => setRenameTarget(null)}
+      />
 
       {/* Last refresh indicator */}
       <div className="px-1 pb-2 text-[10px] text-slate-400">{lastRefresh}</div>

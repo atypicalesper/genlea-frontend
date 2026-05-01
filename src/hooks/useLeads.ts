@@ -1,7 +1,9 @@
 // Custom hook — separates data-fetching concern from rendering.
 // Single Responsibility: own only the leads + contacts fetch lifecycle.
+// Backed by @tanstack/react-query for caching, dedupe, and SWR semantics.
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchLeads, fetchContactsForCompanies, fetchStats, fetchActiveJobs } from '../api/endpoints';
 import type { Company, Contact, Stats, ActiveJob, LeadFilters } from '../types';
 
@@ -11,6 +13,9 @@ export const DEFAULT_FILTERS: LeadFilters = {
   limit: 50, page: 1, sortBy: 'score', sortDir: 'desc',
   segment: 'all',
 };
+
+// Refresh cadence preserved from previous behavior (30s)
+const AUTO_REFRESH_MS = 30_000;
 
 interface UseLeadsReturn {
   companies: Company[];
@@ -28,75 +33,80 @@ interface UseLeadsReturn {
 }
 
 export function useLeads(): UseLeadsReturn {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [contacts, setContacts] = useState<Record<string, Contact[]>>({});
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFiltersState] = useState<LeadFilters>(DEFAULT_FILTERS);
-  const [lastRefresh, setLastRefresh] = useState('');
-  const loadingRef = useRef(false);
 
   const setFilters = useCallback((patch: Partial<LeadFilters>) => {
     setFiltersState(prev => ({ ...prev, ...patch, page: 'page' in patch ? patch.page! : 1 }));
   }, []);
 
-  const load = useCallback(async (f: LeadFilters) => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    setLoading(true);
-    setError(null);
+  // ── Leads page (paginated + filtered) ───────────────────────────────────────
+  const leadsQuery = useQuery({
+    queryKey: ['leads', filters] as const,
+    queryFn: () => fetchLeads(filters),
+    refetchInterval: AUTO_REFRESH_MS,
+    placeholderData: prev => prev, // keep showing previous page while loading next
+  });
 
-    try {
-      const [leadsRes, activeRes] = await Promise.all([
-        fetchLeads(f),
-        fetchActiveJobs().catch(() => ({ data: [] as ActiveJob[] })),
-      ]);
+  // ── Active jobs (header status) — independent, cached separately ────────────
+  const activeJobsQuery = useQuery({
+    queryKey: ['activeJobs'] as const,
+    queryFn: fetchActiveJobs,
+    refetchInterval: AUTO_REFRESH_MS,
+  });
 
-      setCompanies(leadsRes.data);
-      setTotalPages(leadsRes.meta.pages);
-      setTotalCount(leadsRes.meta.total);
-      setActiveJobs((activeRes as { data: ActiveJob[] }).data ?? []);
+  // ── Stats (segment counts) — independent ────────────────────────────────────
+  const statsQuery = useQuery({
+    queryKey: ['stats'] as const,
+    queryFn: fetchStats,
+    refetchInterval: AUTO_REFRESH_MS,
+  });
 
-      // Batch contacts fetch for visible page
-      if (leadsRes.data.length) {
-        const ids = leadsRes.data.map(c => c._id).filter(Boolean);
-        const ctRes = await fetchContactsForCompanies(ids).catch(() => ({ data: {} }));
-        setContacts((ctRes as { data: Record<string, Contact[]> }).data ?? {});
-      }
+  // ── Contacts: keyed by the visible companies, dedupes on identical page set ─
+  const companies = leadsQuery.data?.data ?? [];
+  const companyIds = useMemo(
+    () => companies.map(c => c._id).filter(Boolean),
+    [companies],
+  );
+  const contactsBatchKey = companyIds.join(',');
 
-      setLastRefresh('Updated ' + new Date().toLocaleTimeString());
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
-    } finally {
-      setLoading(false);
-      loadingRef.current = false;
-    }
-  }, []);
+  const contactsQuery = useQuery({
+    queryKey: ['contacts', contactsBatchKey] as const,
+    queryFn: () => fetchContactsForCompanies(companyIds),
+    enabled: companyIds.length > 0,
+    staleTime: 60_000,
+  });
 
-  const loadStats = useCallback(async () => {
-    const res = await fetchStats().catch(() => null);
-    if (res?.data) setStats(res.data);
-  }, []);
+  const contactsData = contactsQuery.data?.data ?? {};
 
+  // ── Refresh = invalidate everything ─────────────────────────────────────────
   const refresh = useCallback(() => {
-    load(filters);
-    loadStats();
-  }, [load, loadStats, filters]);
+    void leadsQuery.refetch();
+    void activeJobsQuery.refetch();
+    void statsQuery.refetch();
+    void contactsQuery.refetch();
+  }, [leadsQuery, activeJobsQuery, statsQuery, contactsQuery]);
 
-  // Reload whenever filters change
-  useEffect(() => { load(filters); }, [filters, load]);
-  useEffect(() => { loadStats(); }, [loadStats]);
+  const lastRefresh = useMemo(() => {
+    const ts = leadsQuery.dataUpdatedAt;
+    return ts ? `Updated ${new Date(ts).toLocaleTimeString()}` : '';
+  }, [leadsQuery.dataUpdatedAt]);
 
-  // Auto-refresh every 30s
-  useEffect(() => {
-    const id = setInterval(() => { loadStats(); load(filters); }, 30_000);
-    return () => clearInterval(id);
-  }, [filters, load, loadStats]);
+  const error = leadsQuery.error
+    ? (leadsQuery.error instanceof Error ? leadsQuery.error.message : String(leadsQuery.error))
+    : null;
 
-  return { companies, contacts, stats, activeJobs, totalPages, totalCount, loading, error, filters, setFilters, refresh, lastRefresh };
+  return {
+    companies,
+    contacts: contactsData,
+    stats: statsQuery.data?.data ?? null,
+    activeJobs: activeJobsQuery.data?.data ?? [],
+    totalPages: leadsQuery.data?.meta.pages ?? 1,
+    totalCount: leadsQuery.data?.meta.total ?? 0,
+    loading: leadsQuery.isFetching,
+    error,
+    filters,
+    setFilters,
+    refresh,
+    lastRefresh,
+  };
 }
